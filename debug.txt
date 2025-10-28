@@ -1,0 +1,7 @@
+WhatsApp Notify: https://wa.me/601140471172?text=%F0%9F%93%A9+New+Contact+Form+Message%0A%0A%F0%9F%91%A4+Name%3A+Lee%0A%F0%9F%93%A7+Email%3A+lee%40gmail.com%0A%F0%9F%93%B1+Phone%3A+0123456789%0A%F0%9F%92%AC+Message%3A+please+call+me+back
+WhatsApp Notify: https://wa.me/60139532593?text=%F0%9F%93%A9+New+Contact+Form+Message%0A%0A%F0%9F%91%A4+Name%3A+testing%0A%F0%9F%93%A7+Email%3A+testing%40test.com%0A%F0%9F%93%B1+Phone%3A+0147852369%0A%F0%9F%92%AC+Message%3A+hellow
+confirmBooking reached
+Checking room booking: room_id = 1, quantity = '2'
+✅ Inserted room booking: room_id = 1, quantity = 2
+Booking created with ID: 2
+Booking ID: 2
