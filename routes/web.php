@@ -5,7 +5,9 @@ Route::get('/ping', function () {
     echo "Pong! Routing is working ✅";
 });
 
-// Home
+// ------------------------
+// Home / Public Routes
+// ------------------------
 Route::get('/', 'Home@index');
 Route::match(['GET', 'POST'], '/rooms', 'Home@rooms');
 Route::get('/about', 'Home@about');
@@ -16,7 +18,25 @@ Route::post('/confirm-booking', 'Home@confirmBooking');
 Route::get('/confirmation-done/{booking_id}', 'Home@confirmationDone');
 Route::get('/download-invoice/{booking_id}', 'Home@downloadInvoice');
 
-// Grouped routes for /admin
+// ------------------------
+// Unified Authentication (Admin + Customer)
+// ------------------------
+Route::group('/auth', function () {
+    Route::get('/login', 'Auth@login');
+    Route::post('/login', 'Auth@authenticate');
+    Route::get('/register', 'Auth@register');
+    Route::post('/register', 'Auth@registerProcess'); 
+    Route::get('/logout', 'Auth@logout');
+    Route::get('/verify', 'Auth@verify');
+    Route::post('/verify', 'Auth@verify');
+});
+Route::get('/dashboard', 'Auth@dashboard');
+Route::get('/profile', 'Auth@profile');
+Route::post('/updateProfile', 'Auth@updateProfile');
+
+// ------------------------
+// Admin Routes
+// ------------------------
 Route::group('/admin', function () {
     // Rooms
     Route::get('/rooms', 'Room@index');
@@ -31,15 +51,9 @@ Route::group('/admin', function () {
     Route::get('/bookings/view/{id}', 'Booking@viewBooking');
     Route::get('/bookings/{id}/delete', 'Booking@delete');
 
+    // Payments
+
     // Messages
     Route::get('/messages', 'Message@index');
     Route::get('/messages/view/{id}', 'Message@viewMessage');
-
-    // Admin auth
-    Route::get('/login', 'Admin@login');
-    Route::get('/profile', 'Admin@profile');
-    Route::post('/updateProfile', 'Admin@updateProfile');
-    Route::post('/authenticate', 'Admin@authenticate');
-    Route::get('/dashboard', 'Admin@dashboard');
-    Route::get('/logout', 'Admin@logout');
 });

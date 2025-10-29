@@ -7,7 +7,7 @@ $base_url = '/fyp_cherating';
 
 // Protect route
 if (!isset($_SESSION['admin_id'])) {
-    header("Location: $base_url/admin/login");
+    header("Location: $base_url/auth/login");
     exit;
 }
 
@@ -47,7 +47,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <hr class="sidebar-divider my-0">
             <!-- Nav Dashboard -->
             <li class="nav-item active">
-                <a class="nav-link" href="<?= $base_url ?>/admin/dashboard">
+                <a class="nav-link" href="<?= $base_url ?>/dashboard">
                     <i class="fas fa-fw fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
@@ -217,7 +217,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <!-- Dropdown - User Information -->
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
                                 aria-labelledby="userDropdown">
-                                <a class="dropdown-item" href="<?= $base_url ?>/admin/profile">
+                                <a class="dropdown-item" href="<?= $base_url ?>/profile">
                                     <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Profile
                                 </a>

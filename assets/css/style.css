@@ -264,7 +264,7 @@ button {
 .navigation.navbar-dark .navbar-nav .nav-link {
      padding: 7px 0px 27px 0px;
      margin: 0 22px;
-     color: #010101;
+     color: #fff;
      font-size: 16px;
      line-height: 20px;
      font-weight: 500;
@@ -294,7 +294,7 @@ button {
      width: 100%;
      height: 86px;
      padding: 15px 0px 15px 0px;
-     background: #fff;
+     background: #0f1521;
 }
 
 
@@ -459,6 +459,16 @@ button {
 }
 
 /** about section **/
+.animate-slide-in {
+   opacity: 0;
+   transform: translateY(50px);
+   transition: all 0.8s ease-out;
+}
+
+.animate-slide-in.visible {
+   opacity: 1;
+   transform: translateY(0);
+}
 
 .about {
      background-color: #fff;
@@ -477,6 +487,11 @@ button {
      margin-bottom: 35px;
 }
 
+.about h3 {
+   color: #0066cc;
+   margin-bottom: 15px;
+}
+
 .about .titlepage p {
      font-weight: 400;
      font-size: 17px;
@@ -484,9 +499,18 @@ button {
      padding-bottom: 35px;
 }
 
+.about ul {
+   list-style: disc;
+   padding-left: 20px;
+}
+
 .about_img {
      margin-right: 40px;
      overflow: hidden;
+}
+
+.about img:hover {
+   transform: scale(1.05);
 }
 
 .about_img figure {

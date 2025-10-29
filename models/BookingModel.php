@@ -141,4 +141,26 @@ class BookingModel extends Model
             throw $error;
         }
     }
+
+    public function getBookingsByCustomer($customerId)
+    {
+        // Get all bookings for the customer
+        $stmt = $this->db->prepare("SELECT * FROM bookings WHERE customer_id = ? ORDER BY check_in DESC");
+        $stmt->execute([$customerId]);
+        $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Add room details for each booking
+        foreach ($bookings as &$booking) {
+            $stmtRooms = $this->db->prepare("
+                SELECT r.name, r.price, br.rooms_booked 
+                FROM booking_rooms br 
+                JOIN rooms r ON br.room_id = r.id 
+                WHERE br.booking_id = ?
+            ");
+            $stmtRooms->execute([$booking['id']]);
+            $booking['rooms'] = $stmtRooms->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        return $bookings;
+    }
 }
