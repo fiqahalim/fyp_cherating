@@ -39,4 +39,11 @@ class AdminModel
         // Execute the query to update the profile
         return $stmt->execute();
     }
+
+    public function getByUsername($username)
+    {
+        $stmt = $this->db->prepare("SELECT * FROM admins WHERE username = ?");
+        $stmt->execute([$username]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 }

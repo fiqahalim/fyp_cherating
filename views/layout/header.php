@@ -59,6 +59,9 @@ $isAdmin = isset($_SESSION['admin_id']); // check if admin logged in
                                     <li class="nav-item">
                                         <a class="nav-link" href="<?= $base_url ?>/contact">Contact Us</a>
                                     </li>
+                                    <li class="nav-item">
+                                        <a href="<?= $base_url ?>/auth/login" class="btn btn-primary">Signup / Login</a>
+                                    </li>
                                 </ul>
                             </div>
                         </nav>
@@ -70,6 +73,6 @@ $isAdmin = isset($_SESSION['admin_id']); // check if admin logged in
     <?php endif; ?>
 
     <!-- Flash messages (global) -->
-    <div class="container mt-3">
+    <div class="container mt-2">
         <?php Flash::display(); ?>
     </div>
