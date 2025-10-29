@@ -21,8 +21,9 @@ class AuthController extends Controller
 
         if ($admin && password_verify($password, $admin['password'])) {
             $_SESSION['role'] = 'admin';
-            $_SESSION['admin_id'] = $admin['id'];
+            $_SESSION['user_id'] = $admin['id']; //unified key
             $_SESSION['username'] = $username;
+
             Flash::set('success', "Welcome back, Admin $username!");
             header("Location: " . APP_URL . "/dashboard");
             exit;
@@ -33,8 +34,9 @@ class AuthController extends Controller
 
         if ($customer && password_verify($password, $customer['password'])) {
             $_SESSION['role'] = 'customer';
-            $_SESSION['customer_id'] = $customer['id'];
+            $_SESSION['user_id'] = $customer['id']; // unified key
             $_SESSION['username'] = $username;
+
             Flash::set('success', "Welcome back, $username!");
             header("Location: " . APP_URL . "/dashboard");
             exit;
@@ -153,7 +155,7 @@ class AuthController extends Controller
 
             $customerModel = $this->model('CustomerModel');
 
-            // ✅ Check and mark verified
+            // Check and mark verified
             if ($customerModel->verifyCustomer($code)) {
                 Flash::set('success', "Verification successful! You can now log in.");
                 header("Location: " . APP_URL . "/auth/login");
@@ -171,15 +173,56 @@ class AuthController extends Controller
 
     public function dashboard()
     {
-        if (!isset($_SESSION['role'])) {
+        // Ensure session is active
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        // Check login
+        if (empty($_SESSION['role'])) {
             header("Location: " . APP_URL . "/auth/login");
             exit;
         }
 
-        // Role check
         $role = $_SESSION['role'];
+        $data = ['role' => $role];
 
-        $this->view('dashboard', ['role' => $role]);
+        // Handle Admin Dashboard
+        if ($role === 'admin') {
+            $this->view('admin/dashboard', $data);
+            return;
+        }
+
+        // Handle Customer Dashboard
+        if ($role === 'customer') {
+            // Handle possible session ID variations
+            $customerId = $_SESSION['user_id'] ?? $_SESSION['id'] ?? null;
+
+            if (!$customerId) {
+                // If no ID is found, force logout or redirect
+                session_destroy();
+                header("Location: " . APP_URL . "/auth/login");
+                exit;
+            }
+
+            // Load booking data
+            $bookingModel = new BookingModel();
+
+            // Optional: add a safeguard in case the method doesn’t exist
+            if (method_exists($bookingModel, 'getBookingsByCustomer')) {
+                $bookings = $bookingModel->getBookingsByCustomer($customerId);
+            } else {
+                $bookings = [];
+            }
+
+            $data['bookings'] = $bookings;
+
+            $this->view('home/dashboard', $data);
+            return;
+        }
+
+        // If user role is unknown
+        echo "Access denied.";
     }
 
     public function profile()
@@ -194,10 +237,13 @@ class AuthController extends Controller
 
         if ($role === 'admin') {
             $adminModel = $this->model('AdminModel');
-            $data = $adminModel->getAdminProfile($_SESSION['admin_id']);
-        } else {
+            $data = $adminModel->getAdminProfile($_SESSION['user_id']);
+        } elseif ($role === 'customer') {
             $customerModel = $this->model('CustomerModel');
-            $data = $customerModel->getProfile($_SESSION['customer_id']);
+            $data = $customerModel->getProfile($_SESSION['user_id']);
+        } else {
+            echo "Access denied.";
+            exit;
         }
 
         $data['role'] = $role;
@@ -241,7 +287,32 @@ class AuthController extends Controller
 
     public function logout()
     {
+        // Start session if not already started
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        // Clear all session variables
+        $_SESSION = [];
+
+        // Destroy the session cookie if it exists
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(
+                session_name(),
+                '',
+                time() - 42000,
+                $params["path"],
+                $params["domain"],
+                $params["secure"],
+                $params["httponly"]
+            );
+        }
+
+        // Destroy the session
         session_destroy();
+
+        // Flash message and redirect
         Flash::set('success', "Logged out successfully.");
         header("Location: " . APP_URL . "/auth/login");
         exit;

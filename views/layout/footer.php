@@ -19,7 +19,7 @@ $isAdmin = isset($_SESSION['admin_id']); // check if admin logged in
                 <div class="col-md-4">
                     <h3>Menu Link</h3>
                     <ul class="link_menu">
-                    <li class="active"><a class="nav-link" href="<?= $base_url ?>/">Home</a></li>
+                    <li><a class="nav-link" href="<?= $base_url ?>/">Home</a></li>
                     <li><a class="nav-link" href="<?= $base_url ?>/about">About</a></li>
                     <li><a class="nav-link" href="<?= $base_url ?>/rooms">Our Rooms</a></li>
                     <li><a class="nav-link" href="<?= $base_url ?>/contact">Contact Us</a></li>

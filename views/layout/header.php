@@ -1,6 +1,21 @@
 <?php
 $base_url = '/fyp_cherating';
 $isAdmin = isset($_SESSION['admin_id']); // check if admin logged in
+$isLoggedIn = isset($_SESSION['role']); // check if user logged in
+
+// Get the current path
+$current_page = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+
+//  code for php 8.0
+// $base_path = trim($base_url, '/');
+// if (str_starts_with($current_page, $base_path)) {
+//     $current_page = trim(substr($current_page, strlen($base_path)), '/');
+// }
+// code for php 7.0
+$base_path = trim($base_url, '/');
+if (strpos($current_page, $base_path) === 0) {
+    $current_page = trim(substr($current_page, strlen($base_path)), '/');
+}
 ?>
 
 <!DOCTYPE html>
@@ -35,7 +50,11 @@ $isAdmin = isset($_SESSION['admin_id']); // check if admin logged in
                         <div class="full">
                             <div class="center-desk">
                                 <div class="logo">
-                                    <a href="<?= $base_url ?>/"><img src="<?= $base_url ?>/assets/images/logo.png" alt="#" /></a>
+                                    <?php if (!$isLoggedIn): ?>
+                                        <a href="<?= $base_url ?>/"><img src="<?= $base_url ?>/assets/images/logo.png" alt="#" /></a>
+                                    <?php else: ?>
+                                        <a href=""><img src="<?= $base_url ?>/assets/images/logo.png" alt="#" /></a>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -47,21 +66,33 @@ $isAdmin = isset($_SESSION['admin_id']); // check if admin logged in
                             </button>
                             <div class="collapse navbar-collapse" id="navbarsExample04">
                                 <ul class="navbar-nav mr-auto">
-                                    <li class="nav-item active">
-                                        <a class="nav-link" href="<?= $base_url ?>/">Home</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a class="nav-link" href="<?= $base_url ?>/about">About</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a class="nav-link" href="<?= $base_url ?>/rooms">Our Rooms</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a class="nav-link" href="<?= $base_url ?>/contact">Contact Us</a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="<?= $base_url ?>/auth/login" class="btn btn-primary">Signup / Login</a>
-                                    </li>
+                                    <?php if ($isLoggedIn): ?>
+                                        <li class="nav-item active">
+                                            <a class="nav-link" href="<?= APP_URL ?>/dashboard">Dashboard</a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="<?= APP_URL ?>/profile">My Profile</a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="<?= $base_url ?>/auth/logout" class="btn btn-danger">Logout</a>
+                                        </li>
+                                    <?php else: ?>
+                                        <li class="nav-item">
+                                            <a class="nav-link <?= $current_page == '' ? 'active' : '' ?>" href="<?= $base_url ?>/">Home</a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link <?= $current_page == 'about' ? 'active' : '' ?>" href="<?= $base_url ?>/about">About</a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link <?= $current_page == 'rooms' ? 'active' : '' ?>" href="<?= $base_url ?>/rooms">Our Rooms</a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link <?= $current_page == 'contact' ? 'active' : '' ?>" href="<?= $base_url ?>/contact">Contact Us</a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="<?= $base_url ?>/auth/login" class="btn btn-danger">Signup/Login</a>
+                                        </li>
+                                    <?php endif; ?>
                                 </ul>
                             </div>
                         </nav>
@@ -71,7 +102,6 @@ $isAdmin = isset($_SESSION['admin_id']); // check if admin logged in
         </div>
     </header>
     <?php endif; ?>
-
     <!-- Flash messages (global) -->
     <div class="container mt-2">
         <?php Flash::display(); ?>
