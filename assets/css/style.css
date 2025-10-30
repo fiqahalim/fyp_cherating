@@ -185,6 +185,11 @@ img {
      box-shadow: 0 0 0 .2rem rgba(255, 255, 255, .25);
 }
 
+.input-group .form-control:focus {
+    box-shadow: none;
+    border-color: #00c6ff;
+}
+
 .navbar-form input {
      border: none !important;
 }
@@ -776,7 +781,7 @@ button {
 .footer {
      background: #0f1521;
      margin-top: 90px;
-     padding-top: 60px;
+     padding-top: 30px;
      text-align: center;
 }
 
@@ -906,8 +911,8 @@ ul.social_icon li a:hover {
 }
 
 .copyright {
-     margin-top: 60px;
-     padding-bottom: 20px;
+     /* margin-top: 30px; */
+     padding-bottom: 10px;
      background-color: #fff;
      border: #ff0909 solid 3px;
      border-right: inherit;

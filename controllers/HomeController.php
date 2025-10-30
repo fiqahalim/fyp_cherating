@@ -248,8 +248,8 @@ class HomeController extends Controller
         <body>
             <div class="header">
                 <img src="' . APP_URL . '/assets/images/logo.png" class="logo" alt="Logo">
-                <h2>Guest House Cherating</h2>
-                <p class="contact">Contact: 012-3456789 | Address: 123 Cherating Rd, Pahang</p>
+                <h2>Cherating Guest House</h2>
+                <p class="contact">Contact: +601111034533 | Address: 4/1000 Kampung Budaya, Jalan Kampung Cherating Lama, 26080 Kuantan, Pahang</p>
             </div>
 
             <h3>Invoice - Booking Ref: ' . htmlspecialchars($booking['booking_ref_no']) . '</h3>

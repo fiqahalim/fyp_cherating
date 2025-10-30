@@ -1,15 +1,11 @@
 <?php
-
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 $base_url = '/fyp_cherating';
-
-// Protect route
-if (!isset($_SESSION['admin_id'])) {
-    header("Location: $base_url/auth/login");
-    exit;
-}
+$isLoggedIn = !empty($_SESSION['is_logged_in']);
+$isAdmin = $isLoggedIn && ($_SESSION['auth_type'] ?? '') === 'admin';
+$isCustomer = $isLoggedIn && ($_SESSION['auth_type'] ?? '') === 'customer';
 
 // Detect current page
 $current_page = basename($_SERVER['PHP_SELF']);
@@ -23,7 +19,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="">
     <meta name="author" content="Amelia Natasya">
-    <title>Admin - Cherating GuestHouse</title>
+    <title>Admin | Cherating Guest House</title>
     <!-- Admin Specific Styles -->
     <link rel="stylesheet" href="<?= $base_url ?>/assets/css/sb-admin-2.css">
     <link href="<?= $base_url ?>/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
@@ -41,7 +37,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <div class="sidebar-brand-icon rotate-n-15">
                     <i class="fas fa-laugh-wink"></i>
                 </div>
-                <div class="sidebar-brand-text mx-3">Cherating GuestHouse</div>
+                <div class="sidebar-brand-text mx-3">Cherating Guest House</div>
             </a>
             <!-- Divider -->
             <hr class="sidebar-divider my-0">
@@ -67,6 +63,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <li class="nav-item">
                 <a class="nav-link" href="<?= $base_url ?>/admin/messages">
                     <i class="fas fa-comment"></i><span>MESSAGES</span>
+                </a>
+            </li>
+            <hr class="sidebar-divider d-none d-md-block">
+            <li class="nav-item">
+                <a class="nav-link" href="<?= $base_url ?>/auth/logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                        Logout
                 </a>
             </li>
             <hr class="sidebar-divider d-none d-md-block">
@@ -222,7 +225,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                                     Profile
                                 </a>
                                 <div class="dropdown-divider"></div>
-                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                <a class="dropdown-item" href="<?= $base_url ?>/auth/logout" data-toggle="modal" data-target="#logoutModal">
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Logout
                                 </a>
