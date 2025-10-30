@@ -1,4 +1,4 @@
-<div class="container d-flex justify-content-center align-items-center min-vh-100">
+<div class="container d-flex justify-content-center align-items-center my-5">
     <div class="col-md-5">
         <div class="card shadow-lg rounded-3">
             <div class="card-header text-center text-white" style="background: linear-gradient(45deg, #0f1521, #00c6ff);">

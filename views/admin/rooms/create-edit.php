@@ -1,3 +1,4 @@
+<?php include_once __DIR__ . '/../layouts/admin_header.php'; ?>
 <div class="container mt-5">
     <?php Flash::display(); ?>
 
@@ -59,3 +60,4 @@
         <a href="<?= APP_URL ?>/admin/rooms" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
+<?php include_once __DIR__ . '/../layouts/admin_footer.php'; ?>

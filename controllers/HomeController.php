@@ -38,19 +38,12 @@ class HomeController extends Controller
     // Rooms page after selecting dates, show availability and prices
     public function rooms()
     {
-        // Fetch arrival and departure dates from POST data, ensure they are not null
-        $arrival = $_POST['arrival_date'] ?? null;
-        $departure = $_POST['departure_date'] ?? null;
-
-        // Validation: ensure both arrival and departure dates are provided
-        if (!$arrival || !$departure) {
-            Flash::set('error', 'Please select both arrival and departure dates.');
-            header('Location: ' . APP_URL);
-            exit;
-        }
+        // Get dates from POST (form submission) or GET (filter links)
+        $arrival = $_POST['arrival_date'] ?? $_GET['arrival_date'] ?? null;
+        $departure = $_POST['departure_date'] ?? $_GET['departure_date'] ?? null;
 
         // Check if the arrival date is before the departure date
-        if ($arrival > $departure) {
+        if ($arrival && $departure && $arrival > $departure) {
             Flash::set('error', 'Departure date must be after arrival date.');
             header('Location: ' . APP_URL);
             exit;
@@ -60,8 +53,18 @@ class HomeController extends Controller
         $priceRange = $_GET['price_range'] ?? null;
         $roomType = $_GET['room_type'] ?? null;
 
-        // Get all rooms with their availability counts based on the dates
-        $rooms = $this->roomModel->getAvailableRoomsWithCounts($arrival, $departure);
+        // Get all rooms
+        if ($arrival && $departure) {
+            // Get all rooms with their availability counts based on the dates
+            $rooms = $this->roomModel->getAvailableRoomsWithCounts($arrival, $departure);
+        } else {
+            // get all rooms without checking availability
+            $rooms = $this->roomModel->getAllRooms();
+            // set availability as null for display purposes
+            foreach ($rooms as &$room) {
+                $room['available'] = null; // availability unknown
+            }
+        }
 
         // Filter rooms by price range if provided
         if ($priceRange) {

@@ -105,6 +105,6 @@ if (strpos($current_page, $base_path) === 0) {
     </header>
     <?php endif; ?>
     <!-- Flash messages (global) -->
-    <div class="container mt-2">
+    <div class="container">
         <?php Flash::display(); ?>
     </div>
