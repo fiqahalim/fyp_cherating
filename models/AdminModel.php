@@ -46,4 +46,11 @@ class AdminModel
         $stmt->execute([$username]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+
+    public function getByEmail($email)
+    {
+        $stmt = $this->db->prepare("SELECT * FROM admins WHERE email = ?");
+        $stmt->execute([$email]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 }

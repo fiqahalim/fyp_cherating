@@ -9,6 +9,10 @@ class AuthController extends Controller
 
     public function authenticate()
     {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
         $username = $_POST['username'] ?? '';
         $password = $_POST['password'] ?? '';
 
@@ -20,11 +24,16 @@ class AuthController extends Controller
         $admin = $adminModel->getByUsername($username);
 
         if ($admin && password_verify($password, $admin['password'])) {
-            $_SESSION['role'] = 'admin';
+            // reset any existing session
+            session_unset();
+            // set admin session
+            $_SESSION['is_logged_in'] = true;
+            $_SESSION['auth_type'] = 'admin';
             $_SESSION['user_id'] = $admin['id']; //unified key
-            $_SESSION['username'] = $username;
+            $_SESSION['username'] = $admin['username'] ?? $username;
+            $_SESSION['full_name'] = $admin['full_name'] ?? 'Administrator';
 
-            Flash::set('success', "Welcome back, Admin $username!");
+            Flash::set('success', "Welcome back, Admin {$username}!");
             header("Location: " . APP_URL . "/dashboard");
             exit;
         }
@@ -33,11 +42,16 @@ class AuthController extends Controller
         $customer = $customerModel->getByUsername($username);
 
         if ($customer && password_verify($password, $customer['password'])) {
-            $_SESSION['role'] = 'customer';
+            // reset any existing session
+            session_unset();
+            // set customer session
+            $_SESSION['is_logged_in'] = true;
+            $_SESSION['auth_type'] = 'customer';
             $_SESSION['user_id'] = $customer['id']; // unified key
             $_SESSION['username'] = $username;
+            $_SESSION['full_name'] = $customer['full_name'] ?? '';
 
-            Flash::set('success', "Welcome back, $username!");
+            Flash::set('success', "Welcome back, {$username}!");
             header("Location: " . APP_URL . "/dashboard");
             exit;
         }
@@ -179,50 +193,40 @@ class AuthController extends Controller
         }
 
         // Check login
-        if (empty($_SESSION['role'])) {
+        if (empty($_SESSION['is_logged_in']) || empty($_SESSION['auth_type'])) {
             header("Location: " . APP_URL . "/auth/login");
             exit;
         }
 
-        $role = $_SESSION['role'];
-        $data = ['role' => $role];
+        $type = $_SESSION['auth_type'];
+        $userId = $_SESSION['user_id'];
+        $data = [
+            'username' => $_SESSION['username'] ?? '',
+            'full_name' => $_SESSION['full_name'] ?? '',
+            'type' => $type
+        ];
 
         // Handle Admin Dashboard
-        if ($role === 'admin') {
+        if ($type === 'admin') {
+
             $this->view('admin/dashboard', $data);
             return;
         }
 
         // Handle Customer Dashboard
-        if ($role === 'customer') {
-            // Handle possible session ID variations
-            $customerId = $_SESSION['user_id'] ?? $_SESSION['id'] ?? null;
-
-            if (!$customerId) {
-                // If no ID is found, force logout or redirect
-                session_destroy();
-                header("Location: " . APP_URL . "/auth/login");
-                exit;
-            }
-
+        if ($type === 'customer') {
             // Load booking data
-            $bookingModel = new BookingModel();
-
-            // Optional: add a safeguard in case the method doesn’t exist
-            if (method_exists($bookingModel, 'getBookingsByCustomer')) {
-                $bookings = $bookingModel->getBookingsByCustomer($customerId);
-            } else {
-                $bookings = [];
-            }
-
-            $data['bookings'] = $bookings;
+            $bookingModel = $this->model('BookingModel');
+            $data['bookings'] = method_exists($bookingModel, 'getBookingsByCustomer')
+                ? $bookingModel->getBookingsByCustomer($userId)
+                : [];
 
             $this->view('home/dashboard', $data);
             return;
         }
 
-        // If user role is unknown
-        echo "Access denied.";
+        // Safety fallback
+        echo "Access Denied: Invalid user role.";
     }
 
     public function profile()
@@ -314,6 +318,128 @@ class AuthController extends Controller
 
         // Flash message and redirect
         Flash::set('success', "Logged out successfully.");
+        header("Location: " . APP_URL . "/auth/login");
+        exit;
+    }
+
+    // Show forgot password form
+    public function forgotPassword()
+    {
+        $this->view('auth/forgot-password');
+    }
+
+    // Handle forgot password submission
+    public function forgotPasswordProcess()
+    {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+
+        $email = trim($_POST['email'] ?? '');
+
+        if (!$email) {
+            Flash::set('error', 'Please enter your username or email.');
+            header("Location: " . APP_URL . "/auth/forgot-password");
+            exit;
+        }
+
+        $adminModel = $this->model('AdminModel');
+        $customerModel = $this->model('CustomerModel');
+        $passwordResetModel = $this->model('PasswordResetModel');
+
+        // Check Admin first
+        $user = $adminModel->getByEmail($email);
+        $userType = 'admin';
+
+        // If not admin, check customer
+        if (!$user) {
+            $user = $customerModel->getByEmail($email, false);
+            $userType = 'customer';
+        }
+
+        if (!$user) {
+            Flash::set('error', 'No account found with that username/email.');
+            header("Location: " . APP_URL . "/auth/forgot-password");
+            exit;
+        }
+
+        // Generate token
+        $token = bin2hex(random_bytes(16));
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+1 hour'));
+
+        // Save token
+        $passwordResetModel->saveToken($user['id'], $userType, $token, $expiresAt);
+
+        // Send reset link (email here, can replace with WhatsApp)
+        $resetLink = APP_URL . "/auth/reset-password?token=$token";
+        $subject = "Password Reset Request";
+        $message = "Click this link to reset your password (valid 1 hour): $resetLink";
+
+        if (!empty($user['email'])) {
+            mail($user['email'], $subject, $message);
+        }
+
+        Flash::set('success', 'Password reset link has been sent.');
+        header("Location: " . APP_URL . "/auth/login");
+        exit;
+    }
+
+    // Show reset password form
+    public function resetPassword()
+    {
+        $token = $_GET['token'] ?? '';
+
+        if (!$token) {
+            Flash::set('error', 'Invalid password reset token.');
+            header("Location: " . APP_URL . "/auth/login");
+            exit;
+        }
+
+        $passwordResetModel = $this->model('PasswordResetModel');
+        $resetRecord = $passwordResetModel->getByToken($token);
+
+        if (!$resetRecord || strtotime($resetRecord['expires_at']) < time()) {
+            Flash::set('error', 'Reset token is invalid or expired.');
+            header("Location: " . APP_URL . "/auth/forgot-password");
+            exit;
+        }
+
+        $this->view('auth/reset_password', ['token' => $token]);
+    }
+
+    // Process reset password submission
+    public function resetPasswordProcess()
+    {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+
+        $token = $_POST['token'] ?? '';
+        $password = $_POST['password'] ?? '';
+        $confirmPassword = $_POST['confirm_password'] ?? '';
+
+        if (!$token || !$password || !$confirmPassword) {
+            Flash::set('error', 'All fields are required.');
+            header("Location: " . APP_URL . "/auth/reset-password?token=$token");
+            exit;
+        }
+
+        if ($password !== $confirmPassword) {
+            Flash::set('error', 'Passwords do not match.');
+            header("Location: " . APP_URL . "/auth/reset-password?token=$token");
+            exit;
+        }
+
+        $passwordResetModel = $this->model('PasswordResetModel');
+        $resetRecord = $passwordResetModel->getByToken($token);
+
+        if (!$resetRecord || strtotime($resetRecord['expires_at']) < time()) {
+            Flash::set('error', 'Reset token is invalid or expired.');
+            header("Location: " . APP_URL . "/auth/forgot-password");
+            exit;
+        }
+
+        // Update password in the correct table
+        $passwordResetModel->updatePassword($resetRecord['user_id'], $password, $resetRecord['user_type']);
+        $passwordResetModel->deleteToken($token);
+
+        Flash::set('success', 'Password has been reset successfully.');
         header("Location: " . APP_URL . "/auth/login");
         exit;
     }

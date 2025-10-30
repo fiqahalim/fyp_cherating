@@ -1,32 +1,57 @@
-<div class="container d-flex justify-content-center align-items-center">
-    <div class="col-md-5">
+<div class="container d-flex justify-content-center align-items-center my-5">
+    <div class="col-md-7 col-lg-6">
         <div class="card shadow-lg rounded-3">
-            <div class="card-header text-center bg-success text-white">
-                <h4>Register</h4>
+            <div class="card-header text-center text-white" style="background: linear-gradient(45deg, #0f1521, #00c6ff);">
+                <h4 class="mb-0" style="color:white;">Register</h4>
             </div>
             <div class="card-body p-4">
                 <form action="<?= APP_URL ?>/auth/register" method="POST">
+                    <!-- Full Name -->
                     <div class="mb-3">
                         <label for="full_name" class="form-label">Full Name</label>
-                        <input type="text" class="form-control" id="full_name" name="full_name" required>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                            <input type="text" class="form-control" id="full_name" name="full_name" placeholder="John Smith" required>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
+
+                    <!-- Email & Phone in one row -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-envelope-fill"></i></span>
+                                <input type="email" class="form-control" id="email" name="email" placeholder="johnsmith@example.com" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="phone" class="form-label">Phone</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-telephone-fill"></i></span>
+                                <input type="text" class="form-control" id="phone" name="phone" placeholder="+60123456789">
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="username" name="username" required>
+
+                    <!-- Username & Password in one row -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="username" class="form-label">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person-badge-fill"></i></span>
+                                <input type="text" class="form-control" id="username" name="username" placeholder="johnsmith" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                                <input type="password" class="form-control" id="password" name="password" placeholder="**********" required>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="phone" class="form-label">Phone</label>
-                        <input type="text" class="form-control" id="phone" name="phone">
-                    </div>
-                    <button type="submit" class="btn btn-success w-100">Register</button>
+
+                    <button type="submit" class="btn btn-primary w-100 mt-3">Register</button>
                 </form>
                 <div class="mt-3 text-center">
                     Already have an account? <a href="<?= APP_URL ?>/auth/login">Login</a>

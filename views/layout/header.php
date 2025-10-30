@@ -1,7 +1,8 @@
 <?php
 $base_url = '/fyp_cherating';
-$isAdmin = isset($_SESSION['admin_id']); // check if admin logged in
-$isLoggedIn = isset($_SESSION['role']); // check if user logged in
+$isLoggedIn = !empty($_SESSION['is_logged_in']);
+$isAdmin = $isLoggedIn && ($_SESSION['auth_type'] ?? '') === 'admin';
+$isCustomer = $isLoggedIn && ($_SESSION['auth_type'] ?? '') === 'customer';
 
 // Get the current path
 $current_page = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
@@ -25,7 +26,7 @@ if (strpos($current_page, $base_path) === 0) {
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="viewport" content="initial-scale=1, maximum-scale=1">
-    <title>Cherating - GuestHouse</title>
+    <title>Cherating - Guest House</title>
     <meta name="keywords" content="">
     <meta name="description" content="">
     <meta name="author" content="Amelia Natasya">
@@ -36,12 +37,15 @@ if (strpos($current_page, $base_path) === 0) {
     <link rel="stylesheet" href="<?= $base_url ?>/assets/css/jquery.mCustomScrollbar.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.min.css" media="screen">
+    <!-- Bootstrap Icons CDN (for the icons) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 </head>
 <body class="main-layout">
     <div class="loader_bg">
         <div class="loader"><img src="<?= $base_url ?>/assets/images/loading.gif" alt="#"/></div>
     </div>
-    <?php if (!$isAdmin): ?>
+    
+    <?php if (!$isAdmin): // hide this header for admin, since admin has its own layout ?>
     <header>
         <div class="header">
             <div class="container">
@@ -50,11 +54,9 @@ if (strpos($current_page, $base_path) === 0) {
                         <div class="full">
                             <div class="center-desk">
                                 <div class="logo">
-                                    <?php if (!$isLoggedIn): ?>
-                                        <a href="<?= $base_url ?>/"><img src="<?= $base_url ?>/assets/images/logo.png" alt="#" /></a>
-                                    <?php else: ?>
-                                        <a href=""><img src="<?= $base_url ?>/assets/images/logo.png" alt="#" /></a>
-                                    <?php endif; ?>
+                                    <a href="<?= $isCustomer ? APP_URL . '/dashboard' : $base_url . '/' ?>">
+                                        <img src="<?= $base_url ?>/assets/images/logo.png" alt="Cherating Guest House Logo" />
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -66,7 +68,7 @@ if (strpos($current_page, $base_path) === 0) {
                             </button>
                             <div class="collapse navbar-collapse" id="navbarsExample04">
                                 <ul class="navbar-nav mr-auto">
-                                    <?php if ($isLoggedIn): ?>
+                                    <?php if ($isCustomer): ?>
                                         <li class="nav-item active">
                                             <a class="nav-link" href="<?= APP_URL ?>/dashboard">Dashboard</a>
                                         </li>

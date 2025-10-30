@@ -7,7 +7,7 @@ class WhatsappHelper
         $whatsappNumber = '601140471172'; // Guest house owner's WhatsApp
 
         $text = urlencode(
-            "📩 Welcome to Cherating GuestHouse!\n\nPlease find the submitted details:\n\n" .
+            "📩 Welcome to Cherating Guest House!\n\nPlease find the submitted details:\n\n" .
             "👤 Name: $name\n" .
             "📧 Email: $email\n" .
             "📱 Phone: $phone\n" .

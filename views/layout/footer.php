@@ -1,6 +1,8 @@
 <?php
 $base_url = '/fyp_cherating';
-$isAdmin = isset($_SESSION['admin_id']); // check if admin logged in
+$isLoggedIn = !empty($_SESSION['is_logged_in']);
+$isAdmin = $isLoggedIn && ($_SESSION['auth_type'] ?? '') === 'admin';
+$isCustomer = $isLoggedIn && ($_SESSION['auth_type'] ?? '') === 'customer';
 ?>
 
 <?php if (!$isAdmin): ?>
@@ -8,15 +10,15 @@ $isAdmin = isset($_SESSION['admin_id']); // check if admin logged in
     <div class="footer">
         <div class="container">
             <div class="row">
-                <div class=" col-md-4">
+                <div class="col-md-10">
                     <h3>Contact US</h3>
                     <ul class="conta">
-                    <li><i class="fas fa-map-marker" aria-hidden="true"></i> Address</li>
-                    <li><i class="fas fa-mobile" aria-hidden="true"></i> +01 1234569540</li>
+                    <li><i class="fas fa-map-marker" aria-hidden="true"></i> 4/1000 Kampung Budaya, Jalan Kampung Cherating Lama, 26080 Kuantan, Pahang</li>
+                    <li><i class="fas fa-mobile" aria-hidden="true"></i> +601111034533</li>
                     <li> <i class="fas fa-envelope" aria-hidden="true"></i><a href="#"> demo@gmail.com</a></li>
                     </ul>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-2">
                     <h3>Menu Link</h3>
                     <ul class="link_menu">
                     <li><a class="nav-link" href="<?= $base_url ?>/">Home</a></li>
@@ -25,7 +27,7 @@ $isAdmin = isset($_SESSION['admin_id']); // check if admin logged in
                     <li><a class="nav-link" href="<?= $base_url ?>/contact">Contact Us</a></li>
                     </ul>
                 </div>
-                <div class="col-md-4">
+                <!-- <div class="col-md-4">
                     <h3>Our Media Social</h3>
                     <ul class="social_icon">
                     <li><a href="#"><i class="fab fa-facebook" aria-hidden="true"></i></a></li>
@@ -33,7 +35,7 @@ $isAdmin = isset($_SESSION['admin_id']); // check if admin logged in
                     <li><a href="#"><i class="fab fa-linkedin" aria-hidden="true"></i></a></li>
                     <li><a href="#"><i class="fab fa-youtube-play" aria-hidden="true"></i></a></li>
                     </ul>
-                </div>
+                </div> -->
             </div>
         </div>
         <div class="copyright">

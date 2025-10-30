@@ -8,8 +8,8 @@ $base_url = '/fyp_cherating';
         <div class="row">
             <div class="col-md-12">
                 <div class="titlepage">
-                    <h2>About Chearting GuestHouse</h2>
-                    <p>Your cozy retreat by the beach in Kuantan. Designed for comfort and convenience, our guesthouse offers a relaxing stay for families, couples, and solo travelers alike.</p>
+                    <h2>About Cherating Guest House</h2>
+                    <p>Your cozy retreat by the beach in Kuantan. Designed for comfort and convenience, our guest house offers a relaxing stay for families, couples, and solo travelers alike.</p>
                 </div>
             </div>
         </div>
@@ -43,7 +43,7 @@ $base_url = '/fyp_cherating';
             </div>
             <div class="col-md-6">
                 <h3>Prime Location</h3>
-                <p>Just a short walk from Cherating Beach, Limbong Art, and local attractions like the Cherating Turtle Sanctuary, Chearting GuestHouse is the perfect base for exploring the area.</p>
+                <p>Just a short walk from Cherating Beach, Limbong Art, and local attractions like the Cherating Turtle Sanctuary, Cherating Guest House is the perfect base for exploring the area.</p>
             </div>
         </div>
 

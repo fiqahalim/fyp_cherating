@@ -29,6 +29,11 @@ Route::group('/auth', function () {
     Route::get('/logout', 'Auth@logout');
     Route::get('/verify', 'Auth@verify');
     Route::post('/verify', 'Auth@verify');
+    // forgot & reset password
+    Route::get('/forgot-password', 'Auth@forgotPassword');
+    Route::post('/forgot-password', 'Auth@forgotPasswordProcess');
+    Route::get('/reset-password', 'Auth@resetPassword');
+    Route::post('/reset-password', 'Auth@resetPasswordProcess');
 });
 Route::get('/dashboard', 'Auth@dashboard');
 Route::get('/profile', 'Auth@profile');
