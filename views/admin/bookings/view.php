@@ -1,3 +1,4 @@
+<?php include_once __DIR__ . '/../layouts/admin_header.php'; ?>
 <div class="container mt-5">
     <?php Flash::display(); ?>
 
@@ -57,3 +58,4 @@
         </div>
     </div>
 </div>
+<?php include_once __DIR__ . '/../layouts/admin_footer.php'; ?>

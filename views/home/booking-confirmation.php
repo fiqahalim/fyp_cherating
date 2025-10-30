@@ -24,10 +24,11 @@
                                     <p><strong>Price:</strong> RM <?= number_format($room['price'], 2) ?> per night</p>
                                     <p><strong>Quantity:</strong> <?= $room['quantity'] ?> rooms selected</p>
                                     <?php if (!empty($room['id'])): ?>
-    <input type="hidden" name="rooms[<?= (int)$room['id'] ?>]" value="<?= (int)$room['quantity'] ?>">
-<?php else: ?>
-    <?php file_put_contents('debug.txt', "❌ Missing room ID in booking-confirmation view.\n", FILE_APPEND); ?>
-<?php endif; ?>
+                                        <input type="hidden" name="rooms[<?= (int)$room['id'] ?>]" value="<?= (int)$room['quantity'] ?>">
+                                    <?php else: ?>
+                                        <?php file_put_contents('debug.txt', "❌ Missing room ID in booking-confirmation view.\n", FILE_APPEND); ?>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
                     <?php endif; ?>
