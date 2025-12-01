@@ -566,7 +566,7 @@ class Dompdf
         $acceptedmedia = Stylesheet::$ACCEPTED_GENERIC_MEDIA_TYPES;
         $acceptedmedia[] = $this->options->getDefaultMediaType();
 
-        // <base href="" />
+        // <base href="#" />
         /** @var \DOMElement|null */
         $baseNode = $this->dom->getElementsByTagName("base")->item(0);
         $baseHref = $baseNode ? $baseNode->getAttribute("href") : "";

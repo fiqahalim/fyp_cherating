@@ -8,7 +8,7 @@ use Dompdf\Options;
 class HomeController extends Controller
 {
     // Declare the model property
-    private $bookingModel, $contactModel, $roomModel;
+    private $bookingModel, $contactModel, $roomModel, $customerModel;
 
     // Constructor to initialize the model
     public function __construct()
@@ -17,6 +17,7 @@ class HomeController extends Controller
         $this->bookingModel = $this->model('BookingModel');
         $this->roomModel = $this->model('RoomModel');
         $this->contactModel = $this->model('ContactModel');
+        $this->customerModel = $this->model('CustomerModel');
     }
 
     // Home Page
@@ -149,21 +150,39 @@ class HomeController extends Controller
         $name = $_POST['name'] ?? '';
         $phone = $_POST['phone'] ?? '';
         $email = $_POST['email'] ?? '';
+        $username = $_POST['username'] ?? null;
+        $password = $_POST['password'] ?? null;
         $check_in = $_POST['check_in'] ?? '';
         $check_out = $_POST['check_out'] ?? '';
         $rooms = $_POST['rooms'] ?? []; // room_id => quantity
         $payment_method = $_POST['payment_method'] ?? '';
         $payment_details = $_POST['payment_details'] ?? '';
-        $totalAmount = $_POST['total_amount'];
+        $totalAmount = $_POST['total_amount'] ?? 0.0;
+
+        $payment_details = '';
+        if ($payment_method === 'card') {
+            $payment_details = 'Card ending in ' . substr($_POST['card_number'] ?? '', -4);
+        } elseif ($payment_method === 'paypal') {
+            $payment_details = 'PayPal Email: ' . ($_POST['paypal_email'] ?? 'N/A');
+        }
 
         // Get booking details from session
-        $check_in = $_SESSION['check_in'] ?? '';
-        $check_out = $_SESSION['check_out'] ?? '';
-        $rooms = $_SESSION['selected_rooms'] ?? [];
+        // $check_in = $_SESSION['check_in'] ?? '';
+        // $check_out = $_SESSION['check_out'] ?? '';
+        // $rooms = $_SESSION['selected_rooms'] ?? [];
 
         // Validate inputs
         if (!$name || !$phone || !$email || !$check_in || !$check_out || empty($rooms)) {
             Flash::set('error', 'Please fill in all required fields.');
+            header('Location: ' . APP_URL);
+            exit;
+        }
+
+        $customerId = $this->customerModel->findOrCreateGuest($name, $phone, $email, $username, $password);
+
+        if (!$customerId) {
+            file_put_contents('debug.txt', 'Customer identification/creation failed for email: ' . $email . PHP_EOL, FILE_APPEND);
+            Flash::set('error', 'Failed to save customer details. Please try again.');
             header('Location: ' . APP_URL);
             exit;
         }
@@ -180,7 +199,15 @@ class HomeController extends Controller
         }
 
         // Save each room booking record
-        $booking_id = $this->bookingModel->createBooking($name, $phone, $email, $check_in, $check_out, $rooms, $payment_method, $payment_details, $totalAmount);
+        $booking_id = $this->bookingModel->createBooking(
+            $customerId, 
+            $check_in, 
+            $check_out, 
+            $rooms, 
+            $payment_method, 
+            $payment_details, 
+            $totalAmount
+        );
 
         if ($booking_id) {
             file_put_contents('debug.txt', 'Booking ID: ' . $booking_id . PHP_EOL, FILE_APPEND);

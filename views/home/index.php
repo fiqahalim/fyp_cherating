@@ -10,39 +10,38 @@ $base_url = '/fyp_cherating';
          <li data-target="#myCarousel" data-slide-to="1"></li>
          <li data-target="#myCarousel" data-slide-to="2"></li>
       </ol>
+
       <div class="carousel-inner">
          <div class="carousel-item active">
-            <img class="first-slide" src="<?= $base_url ?>/assets/images/banner1.jpg" alt="First slide">
-            <div class="container">
-            </div>
+            <img class="d-block w-100" src="<?= $base_url ?>/assets/images/banner1.jpg" alt="First slide">
          </div>
          <div class="carousel-item">
-            <img class="second-slide" src="<?= $base_url ?>/assets/images/banner2.jpg" alt="Second slide">
+            <img class="d-block w-100" src="<?= $base_url ?>/assets/images/banner2.jpg" alt="Second slide">
          </div>
          <div class="carousel-item">
-            <img class="third-slide" src="<?= $base_url ?>/assets/images/banner3.jpg" alt="Third slide">
+            <img class="d-block w-100" src="<?= $base_url ?>/assets/images/banner3.jpg" alt="Third slide">
          </div>
       </div>
+
       <a class="carousel-control-prev" href="#myCarousel" role="button" data-slide="prev">
-      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-      <span class="sr-only">Previous</span>
+         <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+         <span class="sr-only">Previous</span>
       </a>
       <a class="carousel-control-next" href="#myCarousel" role="button" data-slide="next">
-      <span class="carousel-control-next-icon" aria-hidden="true"></span>
-      <span class="sr-only">Next</span>
+         <span class="carousel-control-next-icon" aria-hidden="true"></span>
+         <span class="sr-only">Next</span>
       </a>
-   </div>
-   
-   <!-- Booking Section -->
-   <div class="booking_ocline">
-      <div class="container">
-         <div class="row">
-            <div class="col-md-5">
-               <div class="book_room">
-                  <h1>Book a Room Online</h1>
-                  <form class="book_now"method="POST" action="<?= APP_URL ?>/rooms">
+
+      <!-- Booking Section (overlay on desktop, below on mobile) -->
+      <div class="booking_ocline">
+         <div class="container">
+            <div class="row justify-content-center">
+               <div class="col-md-6 col-lg-5">
+                  <div class="book_room">
+                     <h1>Book a Room Online</h1>
+                     <form class="book_now" method="POST" action="<?= APP_URL ?>/rooms">
                         <div class="row">
-                            <div class="col-md-12">
+                           <div class="col-md-12">
                               <span>Arrival</span>
                               <div class="date-wrapper">
                                  <input class="online_book" id="arrival_date" type="date" name="arrival_date" required>
@@ -57,11 +56,13 @@ $base_url = '/fyp_cherating';
                                  <img class="date_cua" src="<?= $base_url ?>/assets/images/date.png" data-target="departure_date">
                               </div>
                            </div>
-                           <div class="col-md-12">
+
+                           <div class="col-md-12 text-center">
                               <button type="submit" class="book_btn">Book Now</button>
                            </div>
                         </div>
-                    </form>
+                     </form>
+                  </div>
                </div>
             </div>
          </div>
@@ -96,7 +97,7 @@ $base_url = '/fyp_cherating';
          <div class="col-md-12">
             <div class="titlepage">
                <h2>Our Room</h2>
-               <p>Lorem Ipsum available, but the majority have suffered </p>
+               <p>Perfect for families, couples, or solo travelers, every room is designed to make you feel right at home</p>
             </div>
          </div>
       </div>
@@ -107,8 +108,8 @@ $base_url = '/fyp_cherating';
                   <figure><img src="<?= $base_url ?>/assets/images/room1.jpg" alt="#"/></figure>
                </div>
                <div class="bed_room">
-                  <h3>Bed Room</h3>
-                  <p>If you are going to use a passage of Lorem Ipsum, you need to be sure there </p>
+                  <h3>Single Room</h3>
+                  <p>Cozy room for one person with all essential facilities.</p>
                </div>
             </div>
          </div>
@@ -118,8 +119,8 @@ $base_url = '/fyp_cherating';
                   <figure><img src="<?= $base_url ?>/assets/images/room2.jpg" alt="#"/></figure>
                </div>
                <div class="bed_room">
-                  <h3>Bed Room</h3>
-                  <p>If you are going to use a passage of Lorem Ipsum, you need to be sure there </p>
+                  <h3>Standard Room</h3>
+                  <p>Comfortable room with queen bed, ideal for solo travelers or couples.</p>
                </div>
             </div>
          </div>
@@ -129,8 +130,8 @@ $base_url = '/fyp_cherating';
                   <figure><img src="<?= $base_url ?>/assets/images/room3.jpg" alt="#"/></figure>
                </div>
                <div class="bed_room">
-                  <h3>Bed Room</h3>
-                  <p>If you are going to use a passage of Lorem Ipsum, you need to be sure there </p>
+                  <h3>Deluxe Room</h3>
+                  <p>A spacious room with king-size bed, modern amenities, and sea view.</p>
                </div>
             </div>
          </div>

@@ -14,7 +14,7 @@ $isCustomer = $isLoggedIn && ($_SESSION['auth_type'] ?? '') === 'customer';
                     <h3>Contact US</h3>
                     <ul class="conta">
                     <li><i class="fas fa-map-marker" aria-hidden="true"></i> 4/1000 Kampung Budaya, Jalan Kampung Cherating Lama, 26080 Kuantan, Pahang</li>
-                    <li><i class="fas fa-mobile" aria-hidden="true"></i> +601111034533</li>
+                    <li><i class="fas fa-mobile" aria-hidden="true"></i> +6011 1103 4533</li>
                     <li> <i class="fas fa-envelope" aria-hidden="true"></i><a href="#"> demo@gmail.com</a></li>
                     </ul>
                 </div>
@@ -43,7 +43,7 @@ $isCustomer = $isLoggedIn && ($_SESSION['auth_type'] ?? '') === 'customer';
                 <div class="row">
                     <div class="col-md-10 offset-md-1">
                     <p>
-                    © 2025 All Rights Reserved. Design by <a href=""> Amelia</a>
+                    © 2025 All Rights Reserved. Design by <a href="#"> Amelia</a>
                     </p>
                     </div>
                 </div>
@@ -56,10 +56,9 @@ $isCustomer = $isLoggedIn && ($_SESSION['auth_type'] ?? '') === 'customer';
 </html>
 
 <!-- Javascript files-->
-<script src="<?= $base_url ?>/assets/js/jquery.min.js"></script>
-<script src="<?= $base_url ?>/assets/js/bootstrap.bundle.min.js"></script>
-<script src="<?= $base_url ?>/assets/js/jquery-3.0.0.min.js"></script>
-<!-- sidebar -->
+<script src="<?= $base_url ?>/vendor/jquery/jquery.min.js"></script>
+<script src="<?= $base_url ?>/vendor/bootstrap/js/bootstrap.min.js"></script>
+<!-- Other Plugins -->
 <script src="<?= $base_url ?>/assets/js/jquery.mCustomScrollbar.concat.min.js"></script>
 <script src="<?= $base_url ?>/assets/js/custom.js"></script>
 <script>

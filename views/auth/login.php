@@ -1,7 +1,7 @@
 <div class="container d-flex justify-content-center align-items-center my-5">
     <div class="col-md-5">
         <div class="card shadow-lg rounded-3">
-            <div class="card-header text-center text-white" style="background: linear-gradient(45deg, #0f1521, #00c6ff);">
+            <div class="card-header text-center text-white" style="background: linear-gradient(65deg, #0f1521, #fe0000);">
                 <h4 class="mb-0" style="color:white;">Login</h4>
             </div>
             <div class="card-body p-4">
@@ -45,8 +45,10 @@
                         </div>
                         <a href="<?= APP_URL ?>/auth/forgot-password" class="small text-decoration-none">Forgot Password?</a>
                     </div>
-
-                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                    <button type="submit" class="btn w-100"
+                        style="background: linear-gradient(65deg, #0f1521, #fe0000); color:white; border:none;">
+                        Login
+                    </button>
                 </form>
 
                 <div class="mt-3 text-center">

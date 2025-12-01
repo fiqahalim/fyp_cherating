@@ -94,6 +94,7 @@ if (strpos($current_page, $base_path) === 0) {
                                         <li class="nav-item">
                                             <a href="<?= $base_url ?>/auth/login" class="btn btn-danger">Signup/Login</a>
                                         </li>
+
                                     <?php endif; ?>
                                 </ul>
                             </div>
