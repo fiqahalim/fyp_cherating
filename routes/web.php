@@ -14,6 +14,7 @@ Route::get('/about', 'Home@about');
 Route::get('/contact', 'Home@contact');
 Route::post('/contact-submit', 'Home@handleContactForm');
 Route::post('/booking-confirmation', 'Home@bookingConfirmation');
+Route::get('/booking-confirmation', 'Home@handleConfirmationView');
 Route::post('/confirm-booking', 'Home@confirmBooking');
 Route::get('/finalize-booking', 'Home@finalizeBooking');
 Route::get('/confirmation-done/{booking_id}', 'Home@confirmationDone');

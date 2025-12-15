@@ -1,5 +1,6 @@
 <?php
 $base_url = '/fyp_cherating';
+
 $show_fields_flag = isset($_SESSION['show_new_customer_fields']);
 $pending_data = $_SESSION['pending_booking_data'] ?? [];
 
@@ -16,6 +17,7 @@ function get_value($key, $default = '') {
 
 // Get the existing total amount if available
 $total_amount = $_SESSION['total_amount'] ?? 0.0;
+$totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
 ?>
 
 <!-- ============================================================ -->
@@ -132,37 +134,20 @@ $total_amount = $_SESSION['total_amount'] ?? 0.0;
                     <h4 class="section-title">Payment Method</h4>
                     <select id="payment_method" name="payment_method" class="form-control mb-3" required>
                         <option value="">-- Select Payment Method --</option>
-                        <option value="card" <?= get_value('payment_method') == 'card' ? 'selected' : '' ?>>Credit / Debit Card</option>
-                        <option value="paypal" <?= get_value('payment_method') == 'paypal' ? 'selected' : '' ?>>PayPal</option>
-                        <option value="qr" <?= get_value('payment_method') == 'qr' ? 'selected' : '' ?>>QR Pay</option>
+                        
+                        <option value="qr" selected>QR Pay</option>
+                        
+                        <option value="card" disabled style="display:none;">Credit / Debit Card</option>
+                        <option value="paypal" disabled style="display:none;">PayPal</option>
                     </select>
-
-                    <!-- CARD FIELDS -->
-                    <div id="card_payment_details" class="payment-method-fields">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="card_number" class="form-label">Card Number </label>
-                                <input type="text" id="card_number" name="card_number" class="form-control" placeholder="1234 5678 9012 3456" maxlength="19" value="<?= get_value('card_number') ?>" />
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <label for="expiry_date" class="form-label">Expiry Date </label>
-                                <input type="text" id="expiry_date" name="expiry_date" class="form-control" placeholder="MM/YY" maxlength="5" pattern="(0[1-9]|1[0-2])\/\d{2}" value="<?= get_value('card_expiry') ?>" />
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <label for="cvv" class="form-label">CVV</label>
-                                <input type="text" id="cvv" name="cvv" class="form-control" maxlength="4" placeholder="123" value="<?= get_value('card_cvc') ?>" />
-                            </div>
+                    
+                    <div id="card_payment_details" class="payment-method-fields" style="display:none;">
                         </div>
-                    </div>
 
-                    <!-- PayPal payment fields (will be shown if 'paypal' is selected) -->
                     <div id="paypal_payment_details" class="payment-method-fields" style="display:none;">
-                        <label for="paypal_email" class="form-label">PayPal Email</label>
-                        <input type="email" id="paypal_email" name="paypal_email" class="form-control" placeholder="Enter your PayPal email" value="<?= get_value('paypal_email') ?>" />
-                    </div>
+                        </div>
 
-                    <!-- QR payment section (will be shown if 'qr' is selected) -->
-                    <div id="qr_payment_details" class="payment-method-fields" style="display:none;">
+                    <div id="qr_payment_details" class="payment-method-fields" style="display:block;">
                         <p>Scan the QR code below to complete your payment:</p>
                         <div id="qr_code_container"></div>
                     </div>
@@ -185,9 +170,12 @@ $total_amount = $_SESSION['total_amount'] ?? 0.0;
                 <div class="mb-2">
                     <strong>Check-in:</strong> <?= htmlspecialchars($arrival ?? $_SESSION['check_in']) ?>
                 </div>
-
                 <div class="mb-3">
                     <strong>Check-out:</strong> <?= htmlspecialchars($departure ?? $_SESSION['check_out']) ?>
+                </div>
+                <div class="mb-3">
+                    <strong>Total Night(s):</strong> 
+                    <span class="fw-bold"><?= (int)$totalNights ?></span>
                 </div>
                 <hr>
                 <div class="fw-bold mb-2"><b>You selected:</b></div>
@@ -205,11 +193,50 @@ $total_amount = $_SESSION['total_amount'] ?? 0.0;
             <!-- PRICE SUMMARY CARD -->
             <div class="sidebar-card-price p-3">
                 <h4 class="fw-bold mb-3">Your Price Summary</h4>
-                <div class="d-flex justify-content-between" style="font-size:24px;">
-                    <span>Price:</span>
-                    <strong>RM <?= number_format($totalAmount, 2) ?></strong>
+
+                <?php $total_room_cost = 0; ?>
+                <?php $total_rooms_booked = 0; ?>
+
+                <?php foreach ($rooms as $room): ?>
+                    <?php if (($room['quantity'] ?? 0) > 0 && ($room['status'] ?? 'active') === 'active'): ?>
+                        <?php 
+                            $room_price_per_night = $room['price'];
+                            $room_quantity = $room['quantity'];
+                            $room_subtotal = $room_price_per_night * $room_quantity;
+                            $total_room_cost += $room_subtotal;
+                            $total_rooms_booked += $room_quantity;
+                        ?>
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span>
+                                <?= (int)$room_quantity ?> × <?= htmlspecialchars($room['name']) ?> 
+                                (@ RM<?= number_format($room_price_per_night, 2) ?> / night)
+                            </span>
+                            <span>RM <?= number_format($room_subtotal, 2) ?></span>
+                        </div>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+                
+                <div class="d-flex justify-content-between py-1 border-bottom">
+                    <span>Total Room Cost</span>
+                    <span class="fw-bold">RM <?= number_format($total_room_cost, 2) ?></span>
                 </div>
-                <p class="text-muted small mt-2 mb-0">* Additional fees may apply</p>
+
+                <div class="d-flex justify-content-between py-1">
+                    <span>Total Nights</span>
+                    <span class="fw-bold">x <?= (int)$totalNights ?></span>
+                </div>
+
+                <hr class="mt-1 mb-2">
+
+                <div class="d-flex justify-content-between text-danger" style="font-size:25px;">
+                    <span>Grand Total:</span>
+                    <strong class="text-danger">RM <?= number_format($total_amount, 2) ?></strong>
+                </div>
+
+                <p class="text-muted small mt-2 mb-0">
+                    * Total amount covers **<?= (int)$totalNights ?> night(s)** for **<?= $total_rooms_booked ?> room(s)**.
+                </p>
+                <p class="text-muted small mb-0">* Additional fees (e.g., local taxes) may apply upon check-in.</p>
             </div>
 
             <!-- Review Rules -->
