@@ -4,7 +4,7 @@
  * Database Configuration
  * Adjust DB_USER and DB_PASS to match your local MySQL credentials.
  */
-define("DB_HOST", "localhost");
+define("DB_HOST", "127.0.0.1:3316");
 define("DB_NAME", "fyp_cherating");
 define("DB_USER", "root");
 define("DB_PASS", "");
@@ -12,7 +12,7 @@ define("DB_PASS", "");
 /**
  * Application Settings
  */
-define("APP_NAME", "Cherating Guesthouse");
+define("APP_NAME", "Cherating Guest House");
 define("APP_URL", "http://localhost/fyp_cherating"); // Adjust if needed
 
 /**

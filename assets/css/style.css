@@ -1,20 +1,9 @@
-/*--------------------------------------------------------------------- File Name: style.css ---------------------------------------------------------------------*/
-
-
-/*--------------------------------------------------------------------- import Fonts ---------------------------------------------------------------------*/
-
 @import url('https://fonts.googleapis.com/css?family=Rajdhani:300,400,500,600,700');
 @import url('https://fonts.googleapis.com/css?family=Poppins:100,100i,200,200i,300,300i,400,400i,500,500i,600,600i,700,700i,800,800i,900,900i');
 @import url('https://fonts.googleapis.com/css?family=Raleway:100,400,600,700,900&display=swap');
 @import url('https://fonts.googleapis.com/css?family=Baloo+Chettan&display=swap');
 
-/*****---------------------------------------- 1) font-family: 'Rajdhani', sans-serif;
- 2) font-family: 'Poppins', sans-serif;
- ----------------------------------------*****/
-
-
 /*--------------------------------------------------------------------- import Files ---------------------------------------------------------------------*/
-
 @import url(animate.min.css);
 @import url(normalize.css);
 @import url(icomoon.css);
@@ -28,7 +17,6 @@
 @import url(nice-select.css);
 
 /*--------------------------------------------------------------------- skeleton ---------------------------------------------------------------------*/
-
 * {
      box-sizing: border-box !important;
 }
@@ -222,12 +210,18 @@ button {
      padding: 0;
 }
 
+.bcom-title { font-size: 22px; font-weight: 700; }
+.bcom-subtitle { font-size: 16px; font-weight: 600; }
+.bcom-text { font-size: 14px; color: #333; }
+.bcom-card {
+     background: #fff;
+     border-radius: 8px;
+     padding: 20px;
+     box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
 
 /**-- heading section --**/
-
-
 /*---------------------------- preloader area ----------------------------*/
-
 .loader_bg {
      position: fixed;
      z-index: 9999999;
@@ -251,15 +245,10 @@ button {
      width: 280px;
 }
 
-
 /*-- header area --*/
-
-
 /*--------------------------------------------------------------------- top banner area ---------------------------------------------------------------------*/
 
-
 /*-- navigation--*/
-
 .navigation.navbar {
      float: right;
      padding-top: 14px !important;
@@ -304,106 +293,347 @@ button {
 
 
 /** banner section **/
-
 .banner_main {
-     position: relative;
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
+/* Make carousel and images full width */
+.banner,
+.carousel,
+.carousel-inner,
+.carousel-item,
+.carousel-item img {
+  width: 100%;
+  max-width: 100%;
+}
+
+.carousel-item img {
+  display: block;
+  width: 100%;
+  height: 100vh; /* full screen height on desktop */
+  object-fit: cover;
+}
+
+/* Indicators */
 .banner .carousel-indicators li {
-     width: 20px;
-     height: 20px;
-     border-radius: 30px;
-     background: #000;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #000;
 }
 
 .banner .carousel-indicators .active {
-     background-color: #fe0000;
-}
-
-.booking_ocline {
-     position: absolute;
-     width: 100%;
-     top: 50%;
-     transform: translateY(-50%);
-}
-
-.book_room {
-     background-color: #000000c7;
-     padding: 30px 35px;
-     border-left: #ff0909 solid 5px;
-}
-
-.book_room h1 {
-     font-weight: 500;
-     font-size: 30px;
-     line-height: 30px;
-     color: #fff;
-     padding-bottom: 20px;
-     text-transform: uppercase;
-     text-align: center;
-}
-
-.book_now span {
-     display: block;
-     color: #fff;
-     font-size: 18px;
-     padding-bottom: 5px;
-}
-
-.book_now .online_book {
-     width: 100%;
-     height: 50px;
-     border: #fff solid 1px;
-     background-color: transparent;
-     color: #fff;
-     padding: 0 10px;
-     padding-right: 61px;
-     margin-bottom: 25px;
-     position: relative;
-}
-
-.date_cua {
-     position: absolute;
-     width: 29px;
-     height: 29px;
-     top: 48px;
-     background-repeat: no-repeat;
-     right: 30px;
-}
-
-.book_btn {
-     background-color: #fe0000;
-     max-width: 189px;
-     width: 100%;
-     margin: 0 auto;
-     padding: 10px 0;
-     border-radius: 50px;
-     color: #fff;
-     font-size: 20px;
-     transition: ease-in 0.5s;
-     display: block;
-}
-
-.book_btn:hover {
-     background-color: #fff;
-     color: #fe0000;
-     transition: ease-in 0.5s;
-}
-
-.carousel-control-next,
-.carousel-control-prev {
-     display: none;
+  background-color: #fe0000;
 }
 
 .carousel-indicators {
-     right: inherit;
-     bottom: 53px;
-     margin-left: 9%;
+  bottom: 40px;
 }
 
+/* Hide arrows on mobile */
+.carousel-control-next,
+.carousel-control-prev {
+  display: none;
+}
+
+/* Booking overlay */
+.booking_ocline {
+  position: absolute;
+  width: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+}
+
+.booking-box {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid #e6e6e6;
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.room-thumb {
+    width: 110px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.sidebar-card {
+    background: #fdfeff;
+    border-radius: 10px;
+    border: 1px solid #d7e5ff;
+}
+
+.sidebar-card-price {
+    background: #0f1521;
+    border-radius: 10px;
+    border: 1px solid #d7e5ff;
+    color: #ffffff;
+}
+
+.sidebar-card h4 {
+    color: #003580;
+    font-weight: 500;
+}
+
+.sidebar-card-price h4 {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: #0f1521;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #ff0909;
+}
+
+.book_room {
+  background-color: rgba(0, 0, 0, 0.8);
+  padding: 30px 35px;
+  border-left: 5px solid #ff0909;
+  border-radius: 8px;
+}
+
+.book_room h1 {
+  font-weight: 500;
+  font-size: 28px;
+  line-height: 30px;
+  color: #fff;
+  padding-bottom: 20px;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.book_now span {
+  display: block;
+  color: #fff;
+  font-size: 16px;
+  padding-bottom: 5px;
+}
+
+.book_now .online_book {
+  width: 100%;
+  height: 50px;
+  border: 1px solid #fff;
+  background-color: transparent;
+  color: #fff;
+  padding: 0 10px;
+  padding-right: 61px;
+  margin-bottom: 25px;
+  position: relative;
+}
+
+.date_cua {
+  position: absolute;
+  width: 29px;
+  height: 29px;
+  top: 48px;
+  right: 30px;
+  background-repeat: no-repeat;
+}
+
+.book_btn {
+  background-color: #fe0000;
+  max-width: 189px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 10px 0;
+  border-radius: 50px;
+  color: #fff;
+  font-size: 20px;
+  transition: ease-in 0.3s;
+  display: block;
+}
+
+.book_btn:hover {
+  background-color: #fff;
+  color: #fe0000;
+  transition: ease-in 0.3s;
+}
+
+/* ------------------------------
+     TWO COLUMN LAYOUT
+------------------------------ */
+.checkout-wrapper {
+     display: flex;
+     gap: 20px;
+}
+.checkout-left {
+     flex: 2;
+}
+.checkout-right {
+     flex: 1;
+     position: sticky;
+     top: 20px;
+     height: fit-content;
+}
+
+/* ------------------------------
+     RIGHT SIDEBAR CARDS
+------------------------------ */
+.side-card {
+     background: #fff;
+     padding: 18px;
+     border-radius: 10px;
+     margin-bottom: 20px;
+     box-shadow: 0 2px 8px rgba(0,0,0,.1);
+}
+
+.side-title {
+     font-size: 18px;
+     font-weight: 700;
+     margin-bottom: 10px;
+}
+
+.side-section-title {
+     font-size: 15px;
+     font-weight: 600;
+     margin-bottom: 8px;
+}
+
+/* Animated price */
+.animated-price {
+     font-size: 22px;
+     font-weight: 700;
+     color: #dc3545;
+}
+
+/* Progress Bar */
+.progress-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+}
+
+/* CONNECTING LINE - This creates the thin gray line that runs behind the steps */
+.progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: #c6c6c6;
+    z-index: 1;
+    transform: translateY(-50%);
+}
+
+/* INDIVIDUAL STEP */
+.progress-step {
+    display: flex;
+    align-items: center;
+    text-align: left;
+    color: #6b6b6b;
+    font-size: 16px;
+    position: relative;
+    z-index: 2;
+    background-color: #fff;
+    padding: 0 10px;
+    margin: 0;
+}
+
+/* STEP ICONS */
+.progress-step .step-icon {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 14px;
+    box-sizing: border-box;
+    margin-right: 8px;
+    background-color: #e0e0e0;
+    color: #6b6b6b;
+    border: 1px solid #c6c6c6;
+}
+
+/* COMPLETED STEP */
+.progress-step.completed .step-icon {
+     color: #fff;
+     background-color: #dc3545;
+     border-color: #dc3545;
+}
+
+.progress-step.completed .step-icon svg {
+    width: 16px;
+    height: 16px;
+    fill: #fff;
+}
+
+.progress-step.completed .step-text {
+    color: #1a1a1a;
+    font-weight: 700;
+}
+
+/* CURRENT ACTIVE STEP */
+.progress-step.active .step-icon {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+}
+
+.progress-step.active .step-text {
+    color: #1a1a1a;
+    font-weight: 700;
+}
+
+/* Default styles for inactive step text (e.g., "Finish booking") */
+.progress-step .step-text {
+    color: #6b6b6b;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
+.list-rules {
+    padding-left: 20px !important;
+    margin-bottom: 1rem;
+}
+
+.list-rules li {
+    list-style-type: disc !important;
+    margin: revert;
+    padding: revert;
+    margin-bottom: 5px; 
+}
+
+/* ------------------------------
+     PAYMENT SECTION
+------------------------------ */
+.payment-box {
+     border-left: 4px solid #dc3545;
+     background: #ebf3ff;
+     padding: 15px;
+     margin-bottom: 18px;
+     border-radius: 6px;
+}
+
+.form-section-title {
+     font-size: 20px;
+     font-weight: 700;
+     margin-bottom: 15px;
+}
 
 /** end banner section **/
-
 .titlepage {
      text-align: center;
      padding-bottom: 40px;
@@ -483,9 +713,9 @@ button {
 .about .titlepage {
      text-align: left;
      padding-bottom: 0;
-     max-width: 443px;
      width: 100%;
      float: right;
+     justify-items: center;
 }
 
 .about .titlepage h2 {
@@ -936,8 +1166,6 @@ ul.social_icon li a:hover {
 .copyright a:hover {
      color: #ff0909;
 }
-
-
 /** end footer **/
 
 
@@ -977,4 +1205,43 @@ line-height: 35px;
 .required {
     color: #ff0909;
     font-weight: bold;
+}
+
+/* ================================
+   RESPONSIVE DESIGN
+================================ */
+
+/* Tablets and below */
+@media (max-width: 991px) {
+  .carousel-item img {
+    height: 70vh;
+  }
+
+  .booking_ocline {
+    position: relative;
+    top: auto;
+    transform: none;
+    background: #000;
+    padding: 40px 0;
+  }
+
+  .book_room {
+    border-left: none;
+    border-top: 5px solid #ff0909;
+  }
+}
+
+/* Mobile */
+@media (max-width: 576px) {
+  .carousel-item img {
+    height: 60vh;
+  }
+
+  .book_room h1 {
+    font-size: 22px;
+  }
+
+  .book_btn {
+    font-size: 18px;
+  }
 }

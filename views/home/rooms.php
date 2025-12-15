@@ -88,8 +88,8 @@
 
                                     <?php if ($room['available'] === null): ?>
                                         <button type="button" class="btn btn-primary see-availability" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#availabilityModal"
+                                                data-toggle="modal" 
+                                                data-target="#availabilityModal"
                                                 data-room="<?= htmlspecialchars($room['name']) ?>">
                                             See Availability
                                         </button>
@@ -112,7 +112,9 @@
         <?php endif; ?>
 
         <div class="d-flex justify-content-end">
-            <button type="submit" class="btn btn-primary mt-2">Next</button>
+            <button id="nextBtn" type="submit" class="btn btn-primary mt-2" style="display:none;">
+                Next
+            </button>
         </div>
     </form>
 </div>
@@ -152,6 +154,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const arrivalInput = document.getElementById('arrival_date');
     const departureInput = document.getElementById('departure_date');
 
+    /* ============================================================
+       DATE HANDLING & MODAL LOGIC (your original script)
+    ============================================================ */
+
     // Helper: format date to YYYY-MM-DD
     function formatDate(date) {
         const year = date.getFullYear();
@@ -184,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Update modal title dynamically based on clicked room
-    modal.addEventListener('show.bs.modal', event => {
+    modal.addEventListener('show.bs.modal', function (event) {
         const button = event.relatedTarget;
         const roomName = button.getAttribute('data-room');
         const modalTitle = modal.querySelector('.modal-title');
@@ -211,8 +217,34 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Hide alert if all good
-        alertBox.classList.add('d-none');
+        alertBox.classList.add('d-none'); // hide alert if good
     });
+
+    /* ============================================================
+       NEW FEATURE: Show "Next" button ONLY when qty > 0
+    ============================================================ */
+
+    const quantityInputs = document.querySelectorAll('input[name^="rooms["]');
+    const nextBtn = document.getElementById('nextBtn'); // <-- make sure button has this id
+
+    function toggleNextButton() {
+        let show = false;
+
+        quantityInputs.forEach(input => {
+            if (parseInt(input.value) > 0) {
+                show = true;
+            }
+        });
+
+        nextBtn.style.display = show ? 'block' : 'none';
+    }
+
+    // Listen for changes on all quantity inputs
+    quantityInputs.forEach(input => {
+        input.addEventListener('input', toggleNextButton);
+    });
+
+    // Run once on page load
+    toggleNextButton();
 });
 </script>
