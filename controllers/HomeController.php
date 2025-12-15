@@ -147,6 +147,7 @@ class HomeController extends Controller
             exit;
         }
 
+        // 1. Retrieve Data
         $name = $_POST['name'] ?? '';
         $phone = $_POST['phone'] ?? '';
         $email = $_POST['email'] ?? '';
@@ -159,71 +160,102 @@ class HomeController extends Controller
         $payment_details = $_POST['payment_details'] ?? '';
         $totalAmount = $_POST['total_amount'] ?? 0.0;
 
-        $payment_details = '';
-        if ($payment_method === 'card') {
-            $payment_details = 'Card ending in ' . substr($_POST['card_number'] ?? '', -4);
-        } elseif ($payment_method === 'paypal') {
-            $payment_details = 'PayPal Email: ' . ($_POST['paypal_email'] ?? 'N/A');
-        }
-
-        // Get booking details from session
-        // $check_in = $_SESSION['check_in'] ?? '';
-        // $check_out = $_SESSION['check_out'] ?? '';
-        // $rooms = $_SESSION['selected_rooms'] ?? [];
-
-        // Validate inputs
+        // 2. Validate inputs
         if (!$name || !$phone || !$email || !$check_in || !$check_out || empty($rooms)) {
             Flash::set('error', 'Please fill in all required fields.');
             header('Location: ' . APP_URL);
             exit;
         }
 
-        $customerId = $this->customerModel->findOrCreateGuest($name, $phone, $email, $username, $password);
+        // 3. Customer Existence Check & Flow Control
+        $customerExists = $this->customerModel->checkExistence($email);
+        $customerId = null;
 
-        if (!$customerId) {
-            file_put_contents('debug.txt', 'Customer identification/creation failed for email: ' . $email . PHP_EOL, FILE_APPEND);
-            Flash::set('error', 'Failed to save customer details. Please try again.');
-            header('Location: ' . APP_URL);
-            exit;
+        if (!$customerExists) {
+            if (!empty($username) && !empty($password)) {
+                $customerId = $this->customerModel->findOrCreateGuest($name, $phone, $email, $username, $password);
+                
+                if (!$customerId) {
+                    Flash::set('error', 'Account creation failed. The username or email might already be registered. Please try a different username.');
+
+                    $_SESSION['show_new_customer_fields'] = true;
+                    header('Location: ' . APP_URL . '/booking-confirmation');
+                    exit;
+                }
+                // Customer created successfully, proceed to booking finalization
+                $this->handleFinalBooking($customerId, $_POST);
+            } else {
+                $_SESSION['pending_booking_data'] = $_POST;
+
+                Flash::set('prompt', 'It looks like you are a new customer. Please provide a **username** and **password** to create your account and complete the booking.', 'warning');
+
+                $_SESSION['show_new_customer_fields'] = true;
+
+                header('Location: ' . APP_URL . '/booking-confirmation'); 
+                exit;
+            }
+        } else {
+            $customerData = $this->customerModel->getByEmail($email);
+            $customerId = $customerData['id'] ?? null;
+
+            if (!$customerId) {
+                Flash::set('error', 'Could not retrieve customer account data. Please check your email.');
+                header('Location: ' . APP_URL . '/booking-confirmation');
+                exit;
+            }
+
+            // Customer exists and is identified, proceed to final booking
+            $this->handleFinalBooking($customerId, $_POST);
         }
+    }
 
-        // If payment method is QR, generate the QR code URL
-        if ($payment_method === 'qr') {
-            // Generate Touch 'n Go payment URL (this is a simulated URL for demonstration)
-            $merchantId = 'YOUR_MERCHANT_ID'; // Replace with your actual merchant ID
-            $orderId = uniqid();  // Generate a unique order ID
-            $paymentUrl = "https://www.tngdigital.com.my/pay?amount=" . $totalAmount . "&merchant_id=" . $merchantId . "&order_id=" . $orderId;
+    private function handleFinalBooking($customerId, $postData)
+    {
+        // 1. Retrieve essential details
+        $check_in = $postData['check_in']; 
+        $check_out = $postData['check_out'];
+        $rooms = $postData['rooms'];
+        $payment_method = $postData['payment_method'];
+        $totalAmount = $postData['total_amount'] ?? 0.0;
+        $payment_details = '';
 
-            // Pass the payment URL as part of the payment details
+        // 2. Recalculate payment details
+        if ($payment_method === 'card') {
+            $payment_details = 'Card ending in ' . substr($postData['card_number'] ?? '', -4);
+        } elseif ($payment_method === 'paypal') {
+            $payment_details = 'PayPal Email: ' . ($postData['paypal_email'] ?? 'N/A');
+        } elseif ($payment_method === 'qr') {
+            $orderId = uniqid();
             $payment_details = "QR Payment - Amount: RM" . number_format($totalAmount, 2) . ", Order ID: " . $orderId;
         }
 
-        // Save each room booking record
+        // 3. Save Booking Record
         $booking_id = $this->bookingModel->createBooking(
             $customerId, 
-            $check_in, 
-            $check_out, 
+            $check_in,
+            $check_out,
             $rooms, 
             $payment_method, 
             $payment_details, 
             $totalAmount
         );
 
+        // 4. Handle Result
         if ($booking_id) {
-            file_put_contents('debug.txt', 'Booking ID: ' . $booking_id . PHP_EOL, FILE_APPEND);
-
-            // Clean up session data after booking
+            // Clean up session and redirect to confirmation page
             unset($_SESSION['selected_rooms']);
+            unset($_SESSION['pending_booking_data']);
             unset($_SESSION['check_in']);
             unset($_SESSION['check_out']);
             unset($_SESSION['total_amount']);
+            unset($_SESSION['show_new_customer_fields']);
 
             header('Location: ' . APP_URL . '/confirmation-done/' . $booking_id);
             exit;
         } else {
             file_put_contents('debug.txt', 'Booking creation failed' . PHP_EOL, FILE_APPEND);
             Flash::set('error', 'Failed to save booking. Please try again.');
-            header('Location: ' . APP_URL);
+            header('Location: ' . APP_URL . '/booking-confirmation');
             exit;
         }
     }
@@ -249,92 +281,115 @@ class HomeController extends Controller
             return;
         }
 
-        // Enable remote loading (for images via URL)
-        $options = new Options();
-        $options->set('isRemoteEnabled', true);
-        $options->set('isHtml5ParserEnabled', true);
+        $nights = max(1, (strtotime($booking['check_out']) - strtotime($booking['check_in'])) / (60 * 60 * 24));
+        
+        $calculatedTotal = 0.0;
+        $html_rooms = '';
+        
+        // 1. Iterate through rooms to build HTML rows and calculate the true total
+        foreach ($booking['rooms'] as $room) {
+            // Calculate subtotal for the room (Price per night * Quantity * Number of nights)
+            $subtotal = $room['price'] * $room['rooms_booked'] * $nights;
+            $calculatedTotal += $subtotal;
 
-        $dompdf = new Dompdf($options);
-
-        // Build HTML invoice
+            $html_rooms .= '
+                <tr>
+                    <td>' . htmlspecialchars($room['name']) . '</td>
+                    <td>' . $room['rooms_booked'] . '</td>
+                    <td>' . number_format($room['price'], 2) . '</td>
+                    <td>' . number_format($subtotal, 2) . '</td>
+                </tr>';
+        }
+        
+        // 2. Build the final HTML using the calculated total
         $html = '
         <!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
+            <title>Invoice - ' . htmlspecialchars($booking['booking_ref_no']) . '</title>
             <style>
-                body { font-family: DejaVu Sans, sans-serif; font-size: 14px; margin: 20px; }
-                .header { text-align: center; }
-                .logo { width: 100px; }
+                /* Styles specific to printing (hides buttons/unnecessary elements) */
+                @media print {
+                    .no-print {
+                        display: none !important;
+                    }
+                }
+                body { font-family: Arial, sans-serif; font-size: 14px; margin: 20px; }
+                .container { max-width: 800px; margin: 0 auto; padding: 20px; border: 1px solid #ccc; }
+                .header { text-align: center; margin-bottom: 20px; }
+                .logo { max-width: 100px; height: auto; }
                 h2 { margin-bottom: 5px; }
                 .contact { font-size: 12px; margin-bottom: 20px; }
                 .details, .rooms { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
                 .details td { padding: 5px; }
-                .rooms th, .rooms td { border: 1px solid #ddd; padding: 8px; }
+                .rooms th, .rooms td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                 .rooms th { background-color: #f2f2f2; }
+                .total-row td { font-weight: bold; background-color: #f2f2f2; }
                 .footer { text-align: center; font-size: 12px; margin-top: 30px; }
             </style>
         </head>
-        <body>
-            <div class="header">
-                <img src="' . APP_URL . '/assets/images/logo.png" class="logo" alt="Logo">
-                <h2>Cherating Guest House</h2>
-                <p class="contact">Contact: +601111034533 | Address: 4/1000 Kampung Budaya, Jalan Kampung Cherating Lama, 26080 Kuantan, Pahang</p>
-            </div>
+        <body onload="window.print();">
+            <div class="container">
+                <div class="header">
+                    <img src="' . APP_URL . '/assets/images/logo.png" class="logo" alt="Logo">
+                    <h2>Cherating Guest House</h2>
+                    <p class="contact">Contact: +601111034533 | Address: 4/1000 Kampung Budaya, Jalan Kampung Cherating Lama, 26080 Kuantan, Pahang</p>
+                </div>
 
-            <h3>Invoice - Booking Ref: ' . htmlspecialchars($booking['booking_ref_no']) . '</h3>
+                <h3>Invoice - Booking Ref: ' . htmlspecialchars($booking['booking_ref_no']) . '</h3>
 
-            <table class="details">
-                <tr>
-                    <td><strong>Name:</strong></td>
-                    <td>' . htmlspecialchars($booking['full_name']) . '</td>
-                </tr>
-                <tr>
-                    <td><strong>Check-in:</strong></td>
-                    <td>' . htmlspecialchars($booking['check_in']) . '</td>
-                </tr>
-                <tr>
-                    <td><strong>Check-out:</strong></td>
-                    <td>' . htmlspecialchars($booking['check_out']) . '</td>
-                </tr>
-                <tr>
-                    <td><strong>Total Amount:</strong></td>
-                    <td>RM ' . number_format($booking['total_amount'], 2) . '</td>
-                </tr>
-            </table>
-
-            <h4>Rooms Booked</h4>
-            <table class="rooms">
-                <thead>
+                <table class="details">
                     <tr>
-                        <th>Room Name</th>
-                        <th>Quantity</th>
-                        <th>Price (RM)</th>
+                        <td><strong>Name:</strong></td>
+                        <td>' . htmlspecialchars($booking['full_name']) . '</td>
                     </tr>
-                </thead>
-                <tbody>';
-        foreach ($booking['rooms'] as $room) {
-            $html .= '
                     <tr>
-                        <td>' . htmlspecialchars($room['name']) . '</td>
-                        <td>' . $room['rooms_booked'] . '</td>
-                        <td>' . number_format($room['price'], 2) . '</td>
-                    </tr>';
-        }
-        $html .= '
-                </tbody>
-            </table>
+                        <td><strong>Check-in:</strong></td>
+                        <td>' . htmlspecialchars($booking['check_in']) . '</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Check-out:</strong></td>
+                        <td>' . htmlspecialchars($booking['check_out']) . '</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Email:</strong></td>
+                        <td>' . htmlspecialchars($booking['email']) . '</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Payment Method:</strong></td>
+                        <td>' . htmlspecialchars(ucfirst($booking['payment_method'] ?? 'N/A')) . '</td>
+                    </tr>
+                    <!-- Removed redundant and incorrect Total Amount display from header table -->
+                </table>
 
-            <div class="footer">
-                Thank you for booking with us!
+                <h4>Rooms Booked (' . $nights . ' Night(s))</h4>
+                <table class="rooms">
+                    <thead>
+                        <tr>
+                            <th>Room Name</th>
+                            <th>Quantity</th>
+                            <th>Price per Night (RM)</th>
+                            <th>Subtotal (RM)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ' . $html_rooms . '
+                        <tr class="total-row">
+                            <td colspan="3" style="text-align: right;">Total Amount:</td>
+                            <td>RM ' . number_format($calculatedTotal, 2) . '</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="footer">
+                    Thank you for booking with us!
+                </div>
             </div>
         </body>
         </html>';
 
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
-        $dompdf->stream("invoice_{$booking['booking_ref_no']}.pdf", ["Attachment" => true]);
+        echo $html;
         exit;
     }
 

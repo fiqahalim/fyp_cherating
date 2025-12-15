@@ -15,6 +15,7 @@ Route::get('/contact', 'Home@contact');
 Route::post('/contact-submit', 'Home@handleContactForm');
 Route::post('/booking-confirmation', 'Home@bookingConfirmation');
 Route::post('/confirm-booking', 'Home@confirmBooking');
+Route::get('/finalize-booking', 'Home@finalizeBooking');
 Route::get('/confirmation-done/{booking_id}', 'Home@confirmationDone');
 Route::get('/download-invoice/{booking_id}', 'Home@downloadInvoice');
 Route::post('/check-customer-availability', 'Home@checkCustomerAvailability');

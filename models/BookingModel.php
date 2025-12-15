@@ -2,7 +2,7 @@
 
 class BookingModel extends Model
 {
-    public function createBooking($name, $phone, $email, $check_in, $check_out, $rooms, $payment_method, $payment_details, $total_amount)
+    public function createBooking($customerId, $check_in, $check_out, $rooms, $payment_method, $payment_details, $total_amount)
     {
         try {
             // Begin transaction
@@ -15,10 +15,18 @@ class BookingModel extends Model
 
             // Insert main booking record (summary)
             $stmt = $this->db->prepare("
-                INSERT INTO bookings (booking_ref_no, full_name, phone, email, check_in, check_out, payment_method, payment_details, total_amount, status, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', NOW())
+                INSERT INTO bookings 
+                (customer_id, booking_ref_no, check_in, check_out, total_amount, status)
+                VALUES (?, ?, ?, ?, ?, 'confirmed')
             ");
-            $stmt->execute([$booking_ref_no, $name, $phone, $email, $check_in, $check_out, $payment_method, $payment_details, $total_amount]);
+
+            $stmt->execute([
+                $customerId, 
+                $booking_ref_no, 
+                $check_in, 
+                $check_out, 
+                $total_amount
+            ]);
 
             $booking_id = $this->db->lastInsertId();
 
@@ -60,7 +68,17 @@ class BookingModel extends Model
     public function getBookingById($booking_id)
     {
         // Get booking details with rooms
-        $stmt = $this->db->prepare("SELECT * FROM bookings WHERE id = ?");
+        $stmt = $this->db->prepare("
+            SELECT 
+                b.*, 
+                c.full_name, 
+                c.email, 
+                c.phone
+            FROM bookings b
+            LEFT JOIN customers c ON b.customer_id = c.id
+            WHERE b.id = ?
+        ");
+
         $stmt->execute([$booking_id]);
         $booking = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -68,6 +86,19 @@ class BookingModel extends Model
             return null;
         }
 
+        if (!isset($booking['payment_method'])) {
+            if (!empty($booking['notes']) && strpos($booking['notes'], 'Payment Method:') !== false) {
+                $booking['payment_method'] = 'Unspecified/Notes'; 
+            } else {
+                $booking['payment_method'] = 'N/A';
+            }
+        }
+
+        if (!isset($booking['payment_status'])) {
+            $booking['payment_status'] = 'unpaid';
+        }
+
+        // Get associated room details
         $stmtRooms = $this->db->prepare("
             SELECT r.name, r.price, br.rooms_booked 
             FROM booking_rooms br 

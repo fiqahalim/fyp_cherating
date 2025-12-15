@@ -212,9 +212,28 @@ class CustomerModel
         // 2. Customer not found, must create a new record.
         try {
             // A. Ensure required NOT NULL fields are present
-            if (empty($username) || empty($password)) {
-                file_put_contents('debug.txt', "Customer creation error: Missing required username or password for new guest: " . $email . "\n", FILE_APPEND);
-                return false;
+            if (empty($username)) {
+                $baseUsername = 'guest_' . strtolower(substr(str_replace(['@', '.', '-'], '', $email), 0, 10));
+                $counter = 0;
+                $tempUsername = $baseUsername;
+                
+                // Ensure generated username is unique (max 10 tries)
+                while ($this->getByUsername($tempUsername)) {
+                    $counter++;
+                    $tempUsername = $baseUsername . $counter;
+                    if ($counter > 10) { 
+                         // Fallback to a truly unique ID if simple counter fails
+                        $tempUsername = 'guest_' . uniqid();
+                        break; 
+                    }
+                }
+                $username = $tempUsername;
+            }
+
+            // Generate a cryptographically secure random password if missing
+            if (empty($password)) {
+                // This password is only for satisfying the DB constraint; the guest won't use it.
+                $password = bin2hex(random_bytes(16)); 
             }
 
             // B. Check if the provided username is already taken (to prevent UNIQUE constraint error)

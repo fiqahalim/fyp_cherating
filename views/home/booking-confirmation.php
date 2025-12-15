@@ -1,6 +1,27 @@
 <?php
 $base_url = '/fyp_cherating';
+$show_fields_flag = isset($_SESSION['show_new_customer_fields']);
+$pending_data = $_SESSION['pending_booking_data'] ?? [];
+
+// Clear the session flag and pending data after reading them
+if (isset($_SESSION['show_new_customer_fields'])) {
+    unset($_SESSION['show_new_customer_fields']);
+}
+
+// Helper to safely get value from pending data
+function get_value($key, $default = '') {
+    global $pending_data;
+    return htmlspecialchars($pending_data[$key] ?? $default);
+}
+
+// Get the existing total amount if available
+$total_amount = $_SESSION['total_amount'] ?? 0.0;
 ?>
+
+<!-- ============================================================ -->
+<!-- Hidden input field for JavaScript to check the flag set by the controller -->
+<!-- ============================================================ -->
+<input type="hidden" id="show_new_customer_fields_flag" value="<?= $show_fields_flag ? '1' : '0' ?>">
 
 <div class="container my-5">
 
@@ -11,20 +32,35 @@ $base_url = '/fyp_cherating';
         <!-- LEFT COLUMN – FORM -->
         <div class="col-lg-8">
             <!-- HEADER -->
-            <form method="POST" action="<?= APP_URL ?>/confirm-booking">
-                <input type="hidden" name="check_in" value="<?= htmlspecialchars($arrival) ?>">
-                <input type="hidden" name="check_out" value="<?= htmlspecialchars($departure) ?>">
-                <input type="hidden" name="total_amount" value="<?= htmlspecialchars($totalAmount) ?>">
+            <form method="POST" action="<?= APP_URL ?>/confirm-booking" id="booking_form">
+                <!-- HIDDEN INPUTS for Booking Data -->
+                <input type="hidden" name="check_in" value="<?= get_value('check_in', $_SESSION['check_in'] ?? '') ?>">
+                <input type="hidden" name="check_out" value="<?= get_value('check_out', $_SESSION['check_out'] ?? '') ?>">
+                <input type="hidden" name="total_amount" value="<?= $total_amount ?>">
 
                 <!-- SELECTED ROOMS -->
                 <div class="booking-box mb-4">
                     <h4 class="section-title">Your Selected Rooms</h4>
 
                     <?php
-                        $uploadDir = $base_url . '/uploads/rooms/'; 
+                        $uploadDir = $base_url . '/uploads/rooms/';
+                        $current_rooms = isset($pending_data['rooms']) ? $pending_data['rooms'] : ($rooms ?? []);
                     ?>
 
-                    <?php foreach ($rooms as $room): ?>
+                    <?php 
+                    // This block generates the display and the hidden inputs for the rooms
+                    $rooms_to_display = $rooms ?? [];
+
+                    if (!empty($pending_data['rooms'])) {
+                        foreach ($rooms_to_display as &$room) {
+                            $roomId = (int)$room['id'];
+                            $room['quantity'] = (int)($pending_data['rooms'][$roomId] ?? 0);
+                        }
+                        unset($room);
+                    }
+                    ?>
+
+                    <?php foreach ($rooms_to_display as $room): ?>
                         <?php if ($room['quantity'] > 0 && $room['status'] === 'active'): ?>
                             <?php 
                             $imageFilename = $room['image']; 
@@ -62,15 +98,31 @@ $base_url = '/fyp_cherating';
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label>Full Name <span class="text-danger">*</span></label>
-                            <input type="text" name="name" class="form-control" required>
+                            <input type="text" name="name" class="form-control" required value="<?= get_value('name') ?>">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label>Phone Number <span class="text-danger">*</span></label>
-                            <input type="tel" name="phone" class="form-control" required>
+                            <input type="tel" name="phone" class="form-control" required value="<?= get_value('phone') ?>">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label>Email <span class="text-danger">*</span></label>
-                            <input type="email" name="email" class="form-control" required>
+                            <input type="email" name="email" id="guest_email" class="form-control" required 
+                                value="<?= get_value('email') ?>">
+                        </div>
+                    </div>
+
+                    <!-- NEW CUSTOMER FIELDS (Hidden by default, shown if flag is set) -->
+                    <div id="new_customer_fields" class="row mt-3" style="display:none;">
+                        <p class="text-info small">It looks like you don't have an account. Please create a username and password to proceed.</p>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label>Username <span class="text-danger">*</span></label>
+                            <input type="text" name="username" id="guest_username" class="form-control" value="<?= get_value('username') ?>" />
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label>Password <span class="text-danger">*</span></label>
+                            <input type="password" name="password" id="guest_password" class="form-control" value="" />
                         </div>
                     </div>
                 </div>
@@ -79,9 +131,10 @@ $base_url = '/fyp_cherating';
                 <div class="booking-box mb-4">
                     <h4 class="section-title">Payment Method</h4>
                     <select id="payment_method" name="payment_method" class="form-control mb-3" required>
-                        <option value="card">Credit / Debit Card</option>
-                        <option value="paypal">PayPal</option>
-                        <option value="qr">QR Pay</option>
+                        <option value="">-- Select Payment Method --</option>
+                        <option value="card" <?= get_value('payment_method') == 'card' ? 'selected' : '' ?>>Credit / Debit Card</option>
+                        <option value="paypal" <?= get_value('payment_method') == 'paypal' ? 'selected' : '' ?>>PayPal</option>
+                        <option value="qr" <?= get_value('payment_method') == 'qr' ? 'selected' : '' ?>>QR Pay</option>
                     </select>
 
                     <!-- CARD FIELDS -->
@@ -89,15 +142,15 @@ $base_url = '/fyp_cherating';
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="card_number" class="form-label">Card Number </label>
-                                <input type="text" id="card_number" name="card_number" class="form-control" placeholder="1234 5678 9012 3456" maxlength="19" />
+                                <input type="text" id="card_number" name="card_number" class="form-control" placeholder="1234 5678 9012 3456" maxlength="19" value="<?= get_value('card_number') ?>" />
                             </div>
                             <div class="col-md-3 mb-3">
                                 <label for="expiry_date" class="form-label">Expiry Date </label>
-                                <input type="text" id="expiry_date" name="expiry_date" class="form-control" placeholder="MM/YY" maxlength="5" pattern="(0[1-9]|1[0-2])\/\d{2}" />
+                                <input type="text" id="expiry_date" name="expiry_date" class="form-control" placeholder="MM/YY" maxlength="5" pattern="(0[1-9]|1[0-2])\/\d{2}" value="<?= get_value('card_expiry') ?>" />
                             </div>
                             <div class="col-md-3 mb-3">
                                 <label for="cvv" class="form-label">CVV</label>
-                                <input type="text" id="cvv" name="cvv" class="form-control" maxlength="4" placeholder="123" />
+                                <input type="text" id="cvv" name="cvv" class="form-control" maxlength="4" placeholder="123" value="<?= get_value('card_cvc') ?>" />
                             </div>
                         </div>
                     </div>
@@ -105,7 +158,7 @@ $base_url = '/fyp_cherating';
                     <!-- PayPal payment fields (will be shown if 'paypal' is selected) -->
                     <div id="paypal_payment_details" class="payment-method-fields" style="display:none;">
                         <label for="paypal_email" class="form-label">PayPal Email</label>
-                        <input type="email" id="paypal_email" name="paypal_email" class="form-control" placeholder="Enter your PayPal email" />
+                        <input type="email" id="paypal_email" name="paypal_email" class="form-control" placeholder="Enter your PayPal email" value="<?= get_value('paypal_email') ?>" />
                     </div>
 
                     <!-- QR payment section (will be shown if 'qr' is selected) -->
@@ -130,17 +183,17 @@ $base_url = '/fyp_cherating';
             <div class="sidebar-card p-3 mb-4">
                 <h4 class="mb-3 fw-bold">Booking Summary</h4>
                 <div class="mb-2">
-                    <strong>Check-in:</strong> <?= htmlspecialchars($arrival) ?>
+                    <strong>Check-in:</strong> <?= htmlspecialchars($arrival ?? $_SESSION['check_in']) ?>
                 </div>
 
                 <div class="mb-3">
-                    <strong>Check-out:</strong> <?= htmlspecialchars($departure) ?>
+                    <strong>Check-out:</strong> <?= htmlspecialchars($departure ?? $_SESSION['check_out']) ?>
                 </div>
                 <hr>
                 <div class="fw-bold mb-2"><b>You selected:</b></div>
                 <ul class="list-unstyled">
                     <?php foreach ($rooms as $room): ?>
-                        <?php if ($room['quantity'] > 0 && $room['status'] === 'active'): ?>
+                        <?php if (($room['quantity'] ?? 0) > 0 && ($room['status'] ?? 'active') === 'active'): ?>
                             <li class="mb-1">
                                 <?= $room['quantity'] ?> × <?= htmlspecialchars($room['name']) ?>
                             </li>
@@ -181,110 +234,70 @@ $base_url = '/fyp_cherating';
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const emailInput = document.getElementById('guest_email');
+    // 1. Two-Step Customer Fields Logic
+    const newCustomerFields = document.getElementById('new_customer_fields');
     const usernameInput = document.getElementById('guest_username');
     const passwordInput = document.getElementById('guest_password');
-    const newCustomerFields = document.getElementById('new_customer_fields');
-    const confirmButton = document.querySelector('button[type="submit"]');
+    const showFieldsElement = document.getElementById('show_new_customer_fields_flag');
+    
+    // Check the flag set by the PHP logic (1 == true, 0 == false)
+    const showFields = showFieldsElement ? (showFieldsElement.value === '1') : false;
 
-    const setValidationFeedback = (input, message, isInvalid) => {
-        let feedback = input.nextElementSibling;
-        if (!feedback || !feedback.classList.contains('invalid-feedback')) {
-            feedback = document.createElement('div');
-            feedback.classList.add('invalid-feedback');
-            input.parentNode.appendChild(feedback);
-        }
+    if (showFields) {
+        // Step 2: Controller prompted the user for credentials. Show the fields.
+        newCustomerFields.style.display = 'flex'; 
         
-        input.classList.toggle('is-invalid', isInvalid);
-        feedback.textContent = message;
-        confirmButton.disabled = isInvalid;
-    };
+        // Make them required (Crucial for the second submission)
+        if (usernameInput) usernameInput.setAttribute('required', 'required');
+        if (passwordInput) passwordInput.setAttribute('required', 'required');
+        
+        // Scroll to the fields for immediate attention
+        newCustomerFields.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    
+    // 2. Payment Details Visibility Handler
+    const paymentMethodSelect = document.getElementById('payment_method');
+    const cardDetails = document.getElementById('card_payment_details');
+    const paypalDetails = document.getElementById('paypal_payment_details');
+    const qrDetails = document.getElementById('qr_payment_details');
 
-    const checkAvailability = (field, value, checkUsername = false) => {
-        if (value.length === 0) return; 
+    const cardFields = [
+        document.getElementById('card_number'), 
+        document.getElementById('card_expiry'), 
+        document.getElementById('card_cvc')
+    ];
+    const paypalFields = [document.getElementById('paypal_email')];
 
-        const data = {
-            email: emailInput.value.trim(),
-            username: usernameInput.value.trim()
-        };
+    function updatePaymentFields() {
+        const selectedMethod = paymentMethodSelect.value;
+        
+        // Hide all fields initially
+        cardDetails.style.display = 'none';
+        paypalDetails.style.display = 'none';
+        qrDetails.style.display = 'none';
 
-        confirmButton.disabled = true;
-
-        fetch('<?= APP_URL ?>/check-customer-availability', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams(data)
-        })
-        .then(response => response.json())
-        .then(data => {
-            let conflictFound = false;
-            
-            if (data.emailConflict) {
-                setValidationFeedback(emailInput, 'This email is already registered.', true);
-                conflictFound = true;
-                hideNewCustomerFields(false); 
-            } else {
-                setValidationFeedback(emailInput, '', false);
-                showNewCustomerFields();
-            }
-
-            if (checkUsername && data.usernameConflict) {
-                setValidationFeedback(usernameInput, 'This username is already taken.', true);
-                conflictFound = true;
-            } else if (checkUsername) {
-                setValidationFeedback(usernameInput, '', false);
-            }
-            
-            if (!conflictFound) {
-                confirmButton.disabled = false;
-            }
-        })
-        .catch(error => {
-            console.error('Error during availability check:', error);
-            confirmButton.disabled = false;
+        // Remove 'required' from all dynamic fields first
+        [...cardFields, ...paypalFields].forEach(el => {
+            if (el) el.removeAttribute('required');
         });
-    };
-    
-    const showNewCustomerFields = () => {
-        newCustomerFields.style.display = 'flex';
-        usernameInput.setAttribute('required', 'required');
-        passwordInput.setAttribute('required', 'required');
-    }
-    
-    const hideNewCustomerFields = (clearData = true) => {
-        newCustomerFields.style.display = 'none';
-        usernameInput.removeAttribute('required');
-        passwordInput.removeAttribute('required');
-        if (clearData) {
-            usernameInput.value = '';
-            passwordInput.value = '';
-            setValidationFeedback(usernameInput, '', false);
-        }
-    }
-    emailInput.addEventListener('blur', function() {
-        setValidationFeedback(usernameInput, '', false); 
-        
-        if (this.value.trim() !== '') {
-            checkAvailability('email', this.value.trim(), false);
-        } else {
-            showNewCustomerFields();
-        }
-    });
 
-    usernameInput.addEventListener('blur', function() {
-        if (this.value.trim() !== '') {
-            checkAvailability('username', this.value.trim(), true);
-        } else {
-            setValidationFeedback(usernameInput, 'Username is required.', true);
+        // Show fields based on selection and set 'required'
+        if (selectedMethod === 'card') {
+            cardDetails.style.display = 'block';
+            cardFields.forEach(el => { if (el) el.setAttribute('required', 'required'); });
+        } else if (selectedMethod === 'paypal') {
+            paypalDetails.style.display = 'block';
+            paypalFields.forEach(el => { if (el) el.setAttribute('required', 'required'); });
+        } else if (selectedMethod === 'qr') {
+            qrDetails.style.display = 'block';
+            // QR payment requires no extra fields
         }
-    });
-    
-    if (emailInput.value.trim() !== '') {
-        checkAvailability('email', emailInput.value.trim(), false);
-    } else {
-        showNewCustomerFields();
+    }
+
+    if (paymentMethodSelect) {
+        paymentMethodSelect.addEventListener('change', updatePaymentFields);
+        // Initialize fields on load (to show the correct fields if the form was reloaded)
+        updatePaymentFields();
     }
 });
 </script>
