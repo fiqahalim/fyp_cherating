@@ -2,7 +2,7 @@
 
 class BookingModel extends Model
 {
-    public function createBooking($customerId, $check_in, $check_out, $rooms, $payment_method, $payment_details, $total_amount)
+    public function createBooking($customerId, $check_in, $check_out, $rooms, $payment_method, $payment_details, $total_amount, $totalNights)
     {
         try {
             // Begin transaction
@@ -16,19 +16,47 @@ class BookingModel extends Model
             // Insert main booking record (summary)
             $stmt = $this->db->prepare("
                 INSERT INTO bookings 
-                (customer_id, booking_ref_no, check_in, check_out, total_amount, status)
-                VALUES (?, ?, ?, ?, ?, 'confirmed')
+                (customer_id, booking_ref_no, check_in, check_out, total_nights, total_amount, status)
+                VALUES (?, ?, ?, ?, ?, ?, 'confirmed')
             ");
 
             $stmt->execute([
                 $customerId, 
                 $booking_ref_no, 
                 $check_in, 
-                $check_out, 
+                $check_out,
+                (int)$totalNights,
                 $total_amount
             ]);
 
             $booking_id = $this->db->lastInsertId();
+
+            // INSERT PAYMENT RECORD (New Block!)
+            $payment_ref_no = 'P-' . $booking_ref_no . '-' . date('His');
+            $payment_status_default = 'unpaid';
+
+            $stmtPayment = $this->db->prepare("
+                INSERT INTO payments 
+                (booking_id, payment_ref_no, payment_method, amount, payment_type, remarks, verified)
+                VALUES (?, ?, ?, ?, 'full', ?, 'pending')
+            ");
+
+            // Assuming $payment_details from the controller is used as a 'remarks' field for now
+            $stmtPayment->execute([
+                (int)$booking_id,
+                $payment_ref_no,
+                $payment_method,
+                $total_amount,
+                $payment_details
+            ]);
+
+            // OPTIONAL: Update booking payment status after successful payment record creation
+            $stmtUpdate = $this->db->prepare("
+                UPDATE bookings 
+                SET payment_status = ? 
+                WHERE id = ?
+            ");
+            $stmtUpdate->execute(['unpaid', (int)$booking_id]);
 
             // Insert each room booked
             $stmtRoom = $this->db->prepare("
@@ -73,10 +101,16 @@ class BookingModel extends Model
                 b.*, 
                 c.full_name, 
                 c.email, 
-                c.phone
+                c.phone,
+                p.payment_method,
+                p.payment_ref_no,
+                p.payment_date
             FROM bookings b
             LEFT JOIN customers c ON b.customer_id = c.id
+            LEFT JOIN payments p ON b.id = p.booking_id
             WHERE b.id = ?
+            ORDER BY p.payment_date DESC
+            LIMIT 1
         ");
 
         $stmt->execute([$booking_id]);
@@ -86,19 +120,11 @@ class BookingModel extends Model
             return null;
         }
 
-        if (!isset($booking['payment_method'])) {
-            if (!empty($booking['notes']) && strpos($booking['notes'], 'Payment Method:') !== false) {
-                $booking['payment_method'] = 'Unspecified/Notes'; 
-            } else {
-                $booking['payment_method'] = 'N/A';
-            }
-        }
+        // 2. Fallback logic for payment method/status (optional, but good practice)
+        $booking['payment_method'] = $booking['payment_method'] ?? 'N/A';
+        $booking['payment_status'] = $booking['payment_status'] ?? 'unpaid';
 
-        if (!isset($booking['payment_status'])) {
-            $booking['payment_status'] = 'unpaid';
-        }
-
-        // Get associated room details
+        // 3. Get associated room details
         $stmtRooms = $this->db->prepare("
             SELECT r.name, r.price, br.rooms_booked 
             FROM booking_rooms br 

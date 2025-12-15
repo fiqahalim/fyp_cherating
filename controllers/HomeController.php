@@ -110,29 +110,64 @@ class HomeController extends Controller
             exit;
         }
 
+        // --- 1. Calculate Total Nights ---
+        try {
+            $datetime1 = new \DateTime($arrival);
+            $datetime2 = new \DateTime($departure);
+            // The difference in days is the number of nights
+            $interval = $datetime1->diff($datetime2);
+            $totalNights = $interval->days;
+
+            if ($totalNights <= 0) {
+                Flash::set('error', 'Departure date must be after arrival date.');
+                header('Location: ' . APP_URL);
+                exit;
+            }
+        } catch (\Exception $e) {
+            Flash::set('error', 'Invalid date format.');
+            header('Location: ' . APP_URL);
+            exit;
+        }
+
         $rooms = $this->roomModel->getRoomsByIds(array_keys($selectedRooms));
 
-        // Add quantity selected to each room
-        foreach ($rooms as &$room) {
-            $room['quantity'] = (int)($selectedRooms[$room['id']] ?? 0);
+        // Calculate total cost for ONE NIGHT first
+        $costPerNight = 0.0;
+        $rooms_for_session = [];
 
-            // Add the room's price multiplied by the selected quantity to the total amount
-            if ($room['quantity'] > 0) {
-                $totalAmount += $room['price'] * $room['quantity'];
+        foreach ($rooms as $room) {
+            // Get the quantity selected by the user for this specific room ID
+            $roomId = (int)$room['id'];
+            $quantity = (int)($selectedRooms[$roomId] ?? 0);
+
+            if ($quantity > 0) {
+                $room['quantity'] = $quantity;
+                $rooms_for_session[] = $room;
+
+                // Calculate the subtotal for this room type for one night
+                $subtotal = (float)$room['price'] * $quantity;
+                $costPerNight += $subtotal;
             }
         }
 
+        // 2. Calculate Final Total Amount
+        // Multiply the cost for one night by the total number of nights
+        $totalAmount = $costPerNight * $totalNights;
+
         // Save selected rooms and booking details to session
         $_SESSION['selected_rooms'] = $selectedRooms; // e.g. [2 => 1, 5 => 2]
+        $_SESSION['rooms_data'] = $rooms_for_session;
         $_SESSION['check_in'] = $arrival;
         $_SESSION['check_out'] = $departure;
         $_SESSION['total_amount'] = $totalAmount;
+        $_SESSION['total_nights'] = $totalNights;
 
         $this->view('home/booking-confirmation', [
             'arrival' => $arrival,
             'departure' => $departure,
-            'rooms' => $rooms,
+            'rooms' => $rooms_for_session,
             'totalAmount' => $totalAmount,
+            'totalNights' => $totalNights,
         ]);
     }
 
@@ -218,6 +253,7 @@ class HomeController extends Controller
         $payment_method = $postData['payment_method'];
         $totalAmount = $postData['total_amount'] ?? 0.0;
         $payment_details = '';
+        $totalNights = $_SESSION['total_nights'] ?? 1;
 
         // 2. Recalculate payment details
         if ($payment_method === 'card') {
@@ -237,7 +273,8 @@ class HomeController extends Controller
             $rooms, 
             $payment_method, 
             $payment_details, 
-            $totalAmount
+            $totalAmount,
+            $totalNights
         );
 
         // 4. Handle Result
@@ -248,6 +285,7 @@ class HomeController extends Controller
             unset($_SESSION['check_in']);
             unset($_SESSION['check_out']);
             unset($_SESSION['total_amount']);
+            unset($_SESSION['total_nights']);
             unset($_SESSION['show_new_customer_fields']);
 
             header('Location: ' . APP_URL . '/confirmation-done/' . $booking_id);
@@ -297,6 +335,7 @@ class HomeController extends Controller
                     <td>' . htmlspecialchars($room['name']) . '</td>
                     <td>' . $room['rooms_booked'] . '</td>
                     <td>' . number_format($room['price'], 2) . '</td>
+                    <td>' . $nights . '</td>
                     <td>' . number_format($subtotal, 2) . '</td>
                 </tr>';
         }
@@ -363,20 +402,21 @@ class HomeController extends Controller
                     <!-- Removed redundant and incorrect Total Amount display from header table -->
                 </table>
 
-                <h4>Rooms Booked (' . $nights . ' Night(s))</h4>
+                <h4>Rooms Booked: (' . $nights . ' Night(s))</h4>
                 <table class="rooms">
                     <thead>
                         <tr>
                             <th>Room Name</th>
                             <th>Quantity</th>
                             <th>Price per Night (RM)</th>
+                            <th>Total Night(s) Stayed</th>
                             <th>Subtotal (RM)</th>
                         </tr>
                     </thead>
                     <tbody>
                         ' . $html_rooms . '
                         <tr class="total-row">
-                            <td colspan="3" style="text-align: right;">Total Amount:</td>
+                            <td colspan="4" style="text-align: right;">Total Amount:</td>
                             <td>RM ' . number_format($calculatedTotal, 2) . '</td>
                         </tr>
                     </tbody>
@@ -425,5 +465,44 @@ class HomeController extends Controller
 
         header('Location: ' . APP_URL . '/contact');
         exit;
+    }
+
+    /**
+     * Handles the display of the booking confirmation page when accessed via GET 
+     * (e.g., after a redirect from the confirmBooking POST logic).
+    */
+    public function handleConfirmationView()
+    {
+        // Retrieve necessary data from the session
+        $arrival = $_SESSION['check_in'] ?? null;
+        $departure = $_SESSION['check_out'] ?? null;
+        $totalNights = $_SESSION['total_nights'] ?? 0;
+        $totalAmount = $_SESSION['total_amount'] ?? 0.0;
+        
+        // Retrieve room data. We need to fetch room details again, 
+        // but use the quantities stored in $_SESSION['selected_rooms'].
+        $selectedRooms = $_SESSION['selected_rooms'] ?? [];
+        $rooms = [];
+        
+        if (!empty($selectedRooms)) {
+            // Fetch room details from the database
+            $rooms = $this->roomModel->getRoomsByIds(array_keys($selectedRooms));
+
+            // Attach the quantity to each room for the view, just like in bookingConfirmation()
+            foreach ($rooms as &$room) {
+                $roomId = (int)$room['id'];
+                $room['quantity'] = (int)($selectedRooms[$roomId] ?? 0);
+            }
+            unset($room);
+        }
+
+
+        $this->view('home/booking-confirmation', [
+            'arrival' => $arrival,
+            'departure' => $departure,
+            'rooms' => $rooms,
+            'totalAmount' => $totalAmount,
+            'totalNights' => $totalNights,
+        ]);
     }
 }
