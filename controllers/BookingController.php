@@ -73,4 +73,48 @@ class BookingController extends Controller
         header('Location: ' . APP_URL . '/admin/bookings');
         exit;
     }
+
+    /**
+     * Displays the customer's personal booking dashboard, 
+     * categorized into Upcoming and Past bookings.
+    */
+    public function customerDashboard()
+    {
+        // 1. Authentication Check & Customer ID Retrieval
+        // Assuming you use sessions for login and store the customer ID.
+        if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'customer') {
+            // Redirect if not logged in or not a customer
+            header('Location: ' . APP_URL . '/login');
+            exit;
+        }
+
+        $customerId = (int)$_SESSION['user_id'];
+        
+        // 2. Fetch all bookings for the customer
+        $bookings = $this->bookingModel->getBookingsByCustomer($customerId);
+
+        // 3. Sort Bookings into Upcoming and Past
+        $currentDate = date('Y-m-d');
+        $upcomingBookings = [];
+        $pastBookings = [];
+
+        if (!empty($bookings)) {
+            foreach ($bookings as $booking) {
+                // Check-out date is used to determine if the trip is still ongoing or upcoming.
+                if ($booking['check_out'] >= $currentDate) {
+                    $upcomingBookings[] = $booking;
+                } else {
+                    $pastBookings[] = $booking;
+                }
+            }
+        }
+        
+        // 4. Load the enhanced dashboard view
+        $data = [
+            'upcomingBookings' => $upcomingBookings,
+            'pastBookings' => $pastBookings,
+        ];
+
+        $this->view('home/dashboard', $data); 
+    }
 }

@@ -217,9 +217,31 @@ class AuthController extends Controller
         if ($type === 'customer') {
             // Load booking data
             $bookingModel = $this->model('BookingModel');
-            $data['bookings'] = method_exists($bookingModel, 'getBookingsByCustomer')
-                ? $bookingModel->getBookingsByCustomer($userId)
-                : [];
+
+            $allBookings = method_exists($bookingModel, 'getBookingsByCustomer')
+                ? $bookingModel->getBookingsByCustomer($userId): [];
+            
+            if (!is_array($allBookings)) {
+                $allBookings = []; // Safety check
+            }
+            
+            $currentDate = date('Y-m-d');
+            $upcomingBookings = [];
+            $pastBookings = [];
+
+            if (!empty($allBookings)) {
+                foreach ($allBookings as $booking) {
+                    if ($booking['check_out'] >= $currentDate) {
+                        $upcomingBookings[] = $booking;
+                    } else {
+                        $pastBookings[] = $booking;
+                    }
+                }
+            }
+
+            // Pass the two sorted arrays instead of the single 'bookings' array
+            $data['upcomingBookings'] = $upcomingBookings;
+            $data['pastBookings'] = $pastBookings;
 
             $this->view('home/dashboard', $data);
             return;
@@ -231,48 +253,78 @@ class AuthController extends Controller
 
     public function profile()
     {
-        if (!isset($_SESSION['role'])) {
+        if (!isset($_SESSION['user_id'])) {
             header("Location: " . APP_URL . "/auth/login");
             exit;
         }
 
+        if (!isset($_SESSION['role'])) {
+            header("Location: " . APP_URL . "/auth/logout"); 
+            exit;
+        }
+
+        $userId = $_SESSION['user_id'];
         $role = $_SESSION['role'];
         $data = [];
 
         if ($role === 'admin') {
             $adminModel = $this->model('AdminModel');
-            $data = $adminModel->getAdminProfile($_SESSION['user_id']);
+            $idToFetch = $_SESSION['admin_id'] ?? $userId;
+            $data = $adminModel->getAdminProfile($idToFetch);
         } elseif ($role === 'customer') {
             $customerModel = $this->model('CustomerModel');
-            $data = $customerModel->getProfile($_SESSION['user_id']);
+            $idToFetch = $_SESSION['customer_id'] ?? $userId;
+            $data = $customerModel->getProfile($idToFetch);
         } else {
             echo "Access denied.";
             exit;
         }
 
+        // Pass role and any flash messages to the view
         $data['role'] = $role;
+        $data['success'] = Flash::get('success');
+        $data['error'] = Flash::get('error');
+
         $this->view('profile', $data);
     }
 
     public function updateProfile()
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_SESSION['role'])) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_SESSION['user_id'])) {
             header("Location: " . APP_URL . "/auth/login");
             exit;
         }
 
+        $userId = $_SESSION['user_id'];
+        $role = $_SESSION['role'] ?? 'customer';
+
+        $fullName = $_POST['full_name'] ?? '';
+        $email = $_POST['email'] ?? '';
         $username = $_POST['username'] ?? '';
         $password = $_POST['password'] ?? '';
         $hashed = password_hash($password, PASSWORD_DEFAULT);
+        $phone = $_POST['phone'] ?? '';
 
-        $role = $_SESSION['role'];
+        try {
+            if ($role === 'admin') {
+                $adminModel = $this->model('AdminModel');
+                $adminId = $_SESSION['admin_id'] ?? $userId;
+                
+                $adminModel->updateProfileDetails($adminId, $username, $fullName, $email); 
+            } else {
+                $customerModel = $this->model('CustomerModel');
+                $customerId = $_SESSION['customer_id'] ?? $userId;
+                
+                $customerModel->updateProfileDetails($customerId, $username, $fullName, $email, $phone); 
+            }
 
-        if ($role === 'admin') {
-            $adminModel = $this->model('AdminModel');
-            $adminModel->updateProfile($_SESSION['admin_id'], $username, $password);
-        } else {
-            $customerModel = $this->model('CustomerModel');
-            $customerModel->updateProfile($_SESSION['customer_id'], $username, $password);
+            // 3. Success Message and Redirect
+            Flash::set('success', "Profile details updated successfully!");
+            
+        } catch (\Exception $e) {
+            // Log the error and set a generic message
+            Flash::set('error', "An error occurred while updating the profile.");
+            // Optional: Error logging $e->getMessage() 
         }
 
         Flash::set('success', "Profile updated successfully!");

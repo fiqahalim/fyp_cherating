@@ -111,17 +111,36 @@ class CustomerModel
         return false;
     }
 
-    public function updateProfile($id, $username, $password)
+    public function updateProfile($id, $fullName, $email, $username, $password, $phone)
     {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $this->db->prepare("
             UPDATE customers 
-            SET username = :username, password = :password 
+            SET full_name = :full_name, email = :email, username = :username, password = :password, phone = :phone
             WHERE id = :id
         ");
         $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':full_name', $fullName);
+        $stmt->bindParam(':email', $email);
         $stmt->bindParam(':username', $username);
         $stmt->bindParam(':password', $hashedPassword);
+        $stmt->bindParam(':phone', $phone);
+        return $stmt->execute();
+    }
+
+    /**
+     * ONLY updates the password for a customer.
+    */
+    public function updateCustomerPassword($id, $hashedPassword)
+    {
+        $stmt = $this->db->prepare("
+            UPDATE customers 
+            SET password = :password 
+            WHERE id = :id
+        ");
+        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':password', $hashedPassword);
+        
         return $stmt->execute();
     }
 
