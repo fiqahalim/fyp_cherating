@@ -1,5 +1,6 @@
 <?php
-$base_url = '/fyp_cherating';
+// $base_url = '/fyp_cherating';
+$base_url = "http://localhost:8000/FYP/fyp_cherating"; //for macbook
 $isAdmin = isset($_SESSION['admin_id']);
 ?>
 

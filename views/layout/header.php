@@ -1,5 +1,6 @@
 <?php
-$base_url = '/fyp_cherating';
+// $base_url = '/fyp_cherating';
+$base_url = "http://localhost:8000/FYP/fyp_cherating"; //for macbook
 $isLoggedIn = !empty($_SESSION['is_logged_in']);
 $isAdmin = $isLoggedIn && ($_SESSION['auth_type'] ?? '') === 'admin';
 $isCustomer = $isLoggedIn && ($_SESSION['auth_type'] ?? '') === 'customer';
@@ -8,15 +9,15 @@ $isCustomer = $isLoggedIn && ($_SESSION['auth_type'] ?? '') === 'customer';
 $current_page = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 
 //  code for php 8.0
-// $base_path = trim($base_url, '/');
-// if (str_starts_with($current_page, $base_path)) {
-//     $current_page = trim(substr($current_page, strlen($base_path)), '/');
-// }
-// code for php 7.0
 $base_path = trim($base_url, '/');
-if (strpos($current_page, $base_path) === 0) {
+if (str_starts_with($current_page, $base_path)) {
     $current_page = trim(substr($current_page, strlen($base_path)), '/');
 }
+// code for php 7.0
+// $base_path = trim($base_url, '/');
+// if (strpos($current_page, $base_path) === 0) {
+//     $current_page = trim(substr($current_page, strlen($base_path)), '/');
+// }
 ?>
 
 <!DOCTYPE html>
@@ -55,7 +56,7 @@ if (strpos($current_page, $base_path) === 0) {
                             <div class="center-desk">
                                 <div class="logo">
                                     <a href="<?= $isCustomer ? APP_URL . '/dashboard' : $base_url . '/' ?>">
-                                        <img src="<?= $base_url ?>/assets/images/logo.png" alt="Cherating Guest House Logo" />
+                                        <img src="<?= $base_url ?>/assets/images/Cherating_Indah_Logo.png" alt="Cherating Guest House Logo" />
                                     </a>
                                 </div>
                             </div>

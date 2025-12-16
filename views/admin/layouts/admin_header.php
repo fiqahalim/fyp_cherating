@@ -2,7 +2,8 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-$base_url = '/fyp_cherating';
+// $base_url = '/fyp_cherating';
+$base_url = "http://localhost:8000/FYP/fyp_cherating"; //for macbook
 $isLoggedIn = !empty($_SESSION['is_logged_in']);
 $isAdmin = $isLoggedIn && ($_SESSION['auth_type'] ?? '') === 'admin';
 $isCustomer = $isLoggedIn && ($_SESSION['auth_type'] ?? '') === 'customer';
