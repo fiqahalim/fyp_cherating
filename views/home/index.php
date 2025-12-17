@@ -1,5 +1,6 @@
 <?php
-$base_url = '/fyp_cherating';
+// $base_url = '/fyp_cherating';
+$base_url = "http://localhost:8000/FYP/fyp_cherating"; //for macbook
 ?>
 
 <!-- banner -->
@@ -13,13 +14,13 @@ $base_url = '/fyp_cherating';
 
       <div class="carousel-inner">
          <div class="carousel-item active">
-            <img class="d-block w-100" src="<?= $base_url ?>/assets/images/banner1.jpg" alt="First slide">
+            <img class="d-block w-100" src="<?= $base_url ?>/assets/images/AboutUsPage/Picture3.png" alt="First slide">
          </div>
          <div class="carousel-item">
-            <img class="d-block w-100" src="<?= $base_url ?>/assets/images/banner2.jpg" alt="Second slide">
+            <img class="d-block w-100" src="<?= $base_url ?>/assets/images/SingleRoom/Picture2.png" alt="Second slide">
          </div>
          <div class="carousel-item">
-            <img class="d-block w-100" src="<?= $base_url ?>/assets/images/banner3.jpg" alt="Third slide">
+            <img class="d-block w-100" src="<?= $base_url ?>/assets/images/FamilySuite/Picture4.png" alt="Third slide">
          </div>
       </div>
 
@@ -83,7 +84,7 @@ $base_url = '/fyp_cherating';
          </div>
          <div class="col-md-7">
             <div class="about_img">
-               <figure><img src="<?= $base_url ?>/assets/images/about.png" alt="#"/></figure>
+               <figure><img src="<?= $base_url ?>/assets/images/cherating-beach-bar.jpg" alt="#"/></figure>
             </div>
          </div>
       </div>
@@ -105,7 +106,7 @@ $base_url = '/fyp_cherating';
          <div class="col-md-4 col-sm-6">
             <div id="serv_hover"  class="room">
                <div class="room_img">
-                  <figure><img src="<?= $base_url ?>/assets/images/room1.jpg" alt="#"/></figure>
+                  <figure><img src="<?= $base_url ?>/assets/images/SingleRoom/Picture2.png" alt="#"/></figure>
                </div>
                <div class="bed_room">
                   <h3>Single Room</h3>
@@ -116,7 +117,7 @@ $base_url = '/fyp_cherating';
          <div class="col-md-4 col-sm-6">
             <div id="serv_hover"  class="room">
                <div class="room_img">
-                  <figure><img src="<?= $base_url ?>/assets/images/room2.jpg" alt="#"/></figure>
+                  <figure><img src="<?= $base_url ?>/assets/images/StandardRoom/Picture2.png" alt="#"/></figure>
                </div>
                <div class="bed_room">
                   <h3>Standard Room</h3>
@@ -127,10 +128,10 @@ $base_url = '/fyp_cherating';
          <div class="col-md-4 col-sm-6">
             <div id="serv_hover"  class="room">
                <div class="room_img">
-                  <figure><img src="<?= $base_url ?>/assets/images/room3.jpg" alt="#"/></figure>
+                  <figure><img src="<?= $base_url ?>/assets/images/FamilySuite/Picture4.png" alt="#"/></figure>
                </div>
                <div class="bed_room">
-                  <h3>Deluxe Room</h3>
+                  <h3>Family Room</h3>
                   <p>A spacious room with king-size bed, modern amenities, and sea view.</p>
                </div>
             </div>
@@ -152,42 +153,42 @@ $base_url = '/fyp_cherating';
       <div class="row">
          <div class="col-md-3 col-sm-6">
             <div class="gallery_img">
-               <figure><img src="<?= $base_url ?>/assets/images/gallery1.jpg" alt="#"/></figure>
+               <figure><img src="<?= $base_url ?>/assets/images/SingleRoom/Picture1.png" alt="#"/></figure>
             </div>
          </div>
          <div class="col-md-3 col-sm-6">
             <div class="gallery_img">
-               <figure><img src="<?= $base_url ?>/assets/images/gallery2.jpg" alt="#"/></figure>
+               <figure><img src="<?= $base_url ?>/assets/images/DeluxeRoom/Picture1.png" alt="#"/></figure>
             </div>
          </div>
          <div class="col-md-3 col-sm-6">
             <div class="gallery_img">
-               <figure><img src="<?= $base_url ?>/assets/images/gallery3.jpg" alt="#"/></figure>
+               <figure><img src="<?= $base_url ?>/assets/images/FamilySuite/Picture1.png" alt="#"/></figure>
             </div>
          </div>
          <div class="col-md-3 col-sm-6">
             <div class="gallery_img">
-               <figure><img src="<?= $base_url ?>/assets/images/gallery4.jpg" alt="#"/></figure>
+               <figure><img src="<?= $base_url ?>/assets/images/StandardRoom/Picture1.png" alt="#"/></figure>
             </div>
          </div>
          <div class="col-md-3 col-sm-6">
             <div class="gallery_img">
-               <figure><img src="<?= $base_url ?>/assets/images/gallery5.jpg" alt="#"/></figure>
+               <figure><img src="<?= $base_url ?>/assets/images/StandardRoom/Picture2.png" alt="#"/></figure>
             </div>
          </div>
          <div class="col-md-3 col-sm-6">
             <div class="gallery_img">
-               <figure><img src="<?= $base_url ?>/assets/images/gallery6.jpg" alt="#"/></figure>
+               <figure><img src="<?= $base_url ?>/assets/images/FamilySuite/Picture2.png" alt="#"/></figure>
             </div>
          </div>
          <div class="col-md-3 col-sm-6">
             <div class="gallery_img">
-               <figure><img src="<?= $base_url ?>/assets/images/gallery7.jpg" alt="#"/></figure>
+               <figure><img src="<?= $base_url ?>/assets/images/DeluxeRoom/Picture2.png" alt="#"/></figure>
             </div>
          </div>
          <div class="col-md-3 col-sm-6">
             <div class="gallery_img">
-               <figure><img src="<?= $base_url ?>/assets/images/gallery8.jpg" alt="#"/></figure>
+               <figure><img src="<?= $base_url ?>/assets/images/SingleRoom/Picture2.png" alt="#"/></figure>
             </div>
          </div>
       </div>

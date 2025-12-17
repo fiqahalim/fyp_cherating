@@ -68,7 +68,7 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
                             $imageFilename = $room['image']; 
                             $imagePath = !empty($imageFilename) 
                                         ? $uploadDir . $imageFilename 
-                                        : $uploadDir . 'default.jpg';
+                                        : $uploadDir . 'default.png';
                             ?>
 
                             <div class="room-selected-card mb-3 p-3 border rounded d-flex">

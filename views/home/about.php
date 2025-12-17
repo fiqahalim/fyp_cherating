@@ -1,5 +1,6 @@
 <?php
-$base_url = '/fyp_cherating';
+// $base_url = '/fyp_cherating';
+$base_url = "http://localhost:8000/FYP/fyp_cherating"; //for macbook
 ?>
 
 <div class="about">
@@ -17,7 +18,7 @@ $base_url = '/fyp_cherating';
         <!-- Section 1: Comfortable Accommodations -->
         <div class="row align-items-center mb-5 animate-slide-in">
             <div class="col-md-6">
-                <img src="<?= $base_url ?>/assets/images/banner1.jpg" class="img-fluid rounded" alt="Comfortable Rooms">
+                <img src="<?= $base_url ?>/assets/images/AboutUsPage/Picture1.png" class="img-fluid rounded" alt="Comfortable Rooms">
             </div>
             <div class="col-md-6">
                 <h3>Comfortable Accommodations</h3>
@@ -28,7 +29,7 @@ $base_url = '/fyp_cherating';
         <!-- Section 2: Essential Facilities -->
         <div class="row align-items-center mb-5 animate-slide-in">
             <div class="col-md-6 order-md-2">
-                <img src="<?= $base_url ?>/assets/images/banner2.jpg" class="img-fluid rounded" alt="Facilities">
+                <img src="<?= $base_url ?>/assets/images/AboutUsPage/Picture2.png" class="img-fluid rounded" alt="Facilities">
             </div>
             <div class="col-md-6 order-md-1">
                 <h3>Essential Facilities</h3>
@@ -39,7 +40,7 @@ $base_url = '/fyp_cherating';
         <!-- Section 3: Prime Location -->
         <div class="row align-items-center mb-5 animate-slide-in">
             <div class="col-md-6">
-                <img src="<?= $base_url ?>/assets/images/banner3.jpg" class="img-fluid rounded" alt="Prime Location">
+                <img src="<?= $base_url ?>/assets/images/AboutUsPage/Picture3.png" class="img-fluid rounded" alt="Prime Location">
             </div>
             <div class="col-md-6">
                 <h3>Prime Location</h3>
@@ -50,7 +51,7 @@ $base_url = '/fyp_cherating';
         <!-- Section 4: Guest Favorites -->
         <div class="row align-items-center mb-5 animate-slide-in">
             <div class="col-md-6 order-md-2">
-                <img src="<?= $base_url ?>/assets/images/gallery2.jpg" class="img-fluid rounded" alt="Guest Favorites">
+                <img src="<?= $base_url ?>/assets/images/AboutUsPage/Picture4.png" class="img-fluid rounded" alt="Guest Favorites">
             </div>
             <div class="col-md-6 order-md-1">
                 <h3>Guest Favorites</h3>
