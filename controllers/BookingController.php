@@ -16,25 +16,27 @@ class BookingController extends Controller
     {
         // Number of results per page
         $resultsPerPage = 10;
-
-        // Get the current page number from the URL, default to 1
         $currentPage = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $search = isset($_GET['search']) ? $_GET['search'] : '';
 
-        // Calculate the offset for SQL query
         $offset = ($currentPage - 1) * $resultsPerPage;
 
         // Get the total number of bookings
-        $totalBookings = $this->bookingModel->getTotalBookings();
+        $totalBookings = $this->bookingModel->getTotalBookings($search);
         $totalPages = ceil($totalBookings / $resultsPerPage);
 
         // Fetch the bookings for the current page
-        $bookings = $this->bookingModel->getAllBookings($offset, $resultsPerPage);
+        $bookings = $this->bookingModel->getAllBookings($offset, $resultsPerPage, $search);
 
         // Pass the pagination data to the view
         $this->view('admin/bookings/index', [
             'bookings' => $bookings,
             'totalPages' => $totalPages,
-            'currentPage' => $currentPage
+            'currentPage' => $currentPage,
+            'offset' => $offset,
+            'resultsPerPage' => $resultsPerPage,
+            'totalBookings' => $totalBookings,
+            'search' => $search
         ]);
     }
 

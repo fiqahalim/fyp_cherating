@@ -23,10 +23,14 @@
                             </div>
                         </div>
                         <div class="col-sm-12 col-md-6">
-                            <div id="dataTable_filter" class="dataTables_filter">
-                                <label>Search:
-                                    <input type="search" class="form-control form-control-sm" placeholder="" aria-controls="dataTable">
-                                </label>
+                            <div id="dataTable_filter" class="dataTables_filter text-right">
+                                <form action="" method="GET" class="form-inline d-inline-block">
+                                    <label>Search:
+                                        <input type="search" name="search" class="form-control form-control-sm" 
+                                            placeholder="Ref No, Name..." 
+                                            value="<?= htmlspecialchars($search ?? '') ?>">
+                                    </label>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -74,24 +78,27 @@
                     <!-- Pagination -->
                     <div class="row">
                         <div class="col-sm-12 col-md-5">
-                            <div class="dataTables_info" id="dataTable_info" role="status" aria-live="polite">Showing 1 to <?= count($bookings) ?> of <?= count($bookings) ?> entries
+                            <div class="dataTables_info" id="dataTable_info" role="status" aria-live="polite">
+                                Showing <?= $offset + 1 ?> to <?= min($offset + $resultsPerPage, $totalBookings) ?> of <?= $totalBookings ?> entries
                             </div>
                         </div>
                         <div class="col-sm-12 col-md-7">
                             <div class="dataTables_paginate paging_simple_numbers" id="dataTable_paginate">
                                 <ul class="pagination">
                                     <li class="page-item <?= $currentPage == 1 ? 'disabled' : '' ?>">
-                                        <a class="page-link" href="?page=<?= $currentPage - 1 ?>" aria-label="Previous">
+                                        <a class="page-link" href="?page=<?= $currentPage - 1 ?>&search=<?= urlencode($search) ?>" aria-label="Previous">
                                             <span aria-hidden="true">&laquo;</span>
                                         </a>
                                     </li>
+
                                     <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                                         <li class="page-item <?= $i == $currentPage ? 'active' : '' ?>">
-                                            <a class="page-link" href="?page=<?= $i ?>"><?= $i ?></a>
+                                            <a class="page-link" href="?page=<?= $i ?>&search=<?= urlencode($search) ?>"><?= $i ?></a>
                                         </li>
                                     <?php endfor; ?>
-                                    <li class="page-item <?= $currentPage == $totalPages ? 'disabled' : '' ?>">
-                                        <a class="page-link" href="?page=<?= $currentPage + 1 ?>" aria-label="Next">
+
+                                    <li class="page-item <?= $currentPage == $totalPages || $totalPages == 0 ? 'disabled' : '' ?>">
+                                        <a class="page-link" href="?page=<?= $currentPage + 1 ?>&search=<?= urlencode($search) ?>" aria-label="Next">
                                             <span aria-hidden="true">&raquo;</span>
                                         </a>
                                     </li>

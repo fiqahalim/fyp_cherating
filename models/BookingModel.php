@@ -155,9 +155,31 @@ class BookingModel extends Model
         return $payment_info;
     }
 
-    public function getAllBookings($offset = 0, $limit = 10)
+    public function getAllBookings($offset = 0, $limit = 10, $search = '')
     {
-        $stmt = $this->db->prepare("SELECT * FROM bookings LIMIT :offset, :limit");
+        $searchQuery = "";
+        if (!empty($search)) {
+            // Search by Ref No, Full Name, or Email
+            $searchQuery = " WHERE b.booking_ref_no LIKE :search 
+                            OR c.full_name LIKE :search 
+                            OR c.email LIKE :search ";
+        }
+
+        // Join with customers table to get name, email, and phone
+        $sql = "SELECT b.*, c.full_name, c.email, c.phone 
+                FROM bookings b
+                LEFT JOIN customers c ON b.customer_id = c.id
+                $searchQuery
+                ORDER BY b.created_at DESC
+                LIMIT :offset, :limit";
+
+        $stmt = $this->db->prepare($sql);
+
+        if (!empty($search)) {
+            $searchTerm = "%$search%";
+            $stmt->bindValue(':search', $searchTerm);
+        }
+
         $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
         $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
@@ -165,9 +187,23 @@ class BookingModel extends Model
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getTotalBookings()
+    public function getTotalBookings($search = '')
     {
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM bookings");
+        $searchQuery = "";
+        if (!empty($search)) {
+            $searchQuery = " LEFT JOIN customers c ON b.customer_id = c.id 
+                            WHERE b.booking_ref_no LIKE :search 
+                            OR c.full_name LIKE :search 
+                            OR c.email LIKE :search ";
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM bookings b $searchQuery");
+
+        if (!empty($search)) {
+            $searchTerm = "%$search%";
+            $stmt->bindValue(':search', $searchTerm);
+        }
+
         $stmt->execute();
 
         return $stmt->fetchColumn();

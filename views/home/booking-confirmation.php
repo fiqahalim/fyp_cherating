@@ -133,8 +133,6 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
                 <div class="booking-box mb-4">
                     <h4 class="section-title">Payment Method</h4>
                     <select id="payment_method" name="payment_method" class="form-control mb-3" required>
-                        <option value="">-- Select Payment Method --</option>
-                        
                         <option value="qr" selected>QR Pay</option>
                         
                         <option value="card" disabled style="display:none;">Credit / Debit Card</option>
