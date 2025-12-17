@@ -112,10 +112,10 @@ class HomeController extends Controller
 
         // --- 1. Calculate Total Nights ---
         try {
-            $datetime1 = new \DateTime($arrival);
-            $datetime2 = new \DateTime($departure);
+            $checkDate = new \DateTime($arrival);
+            $endDate = new \DateTime($departure);
             // The difference in days is the number of nights
-            $interval = $datetime1->diff($datetime2);
+            $interval = $checkDate->diff($endDate);
             $totalNights = $interval->days;
 
             if ($totalNights <= 0) {
@@ -129,18 +129,40 @@ class HomeController extends Controller
             exit;
         }
 
-        $rooms = $this->roomModel->getRoomsByIds(array_keys($selectedRooms));
+        // Check if the selected dates are fully booked
+        $fullDates = $this->bookingModel->getFullyBookedDates();
 
-        // Calculate total cost for ONE NIGHT first
+        // Create a temporary clone for the loop so we don't modify the original arrival object
+        $loopDate = clone $checkDate;
+        
+        // Check if the arrival date is in the "Full" list
+        while ($loopDate < $endDate) {
+            $formattedDate = $loopDate->format('Y-m-d');
+            if (in_array($formattedDate, $fullDates)) {
+                // die("Date $formattedDate is full!");
+                Flash::set('error', "Sorry! The guesthouse is fully booked on " . $loopDate->format('d/m/Y') . ". Please choose different dates.");
+                header('Location: ' . APP_URL);
+                exit;
+            }
+            $loopDate->modify('+1 day');
+        }
+
+        // 4. Room Processing & Cost Calculation
+        $rooms = $this->roomModel->getRoomsByIds(array_keys($selectedRooms));
         $costPerNight = 0.0;
         $rooms_for_session = [];
 
         foreach ($rooms as $room) {
-            // Get the quantity selected by the user for this specific room ID
             $roomId = (int)$room['id'];
             $quantity = (int)($selectedRooms[$roomId] ?? 0);
 
             if ($quantity > 0) {
+                if ($quantity > (int)$room['total_rooms']) {
+                    Flash::set('error', "You requested $quantity {$room['name']}(s), but we only have {$room['total_rooms']} units in total.");
+                    header('Location: ' . APP_URL);
+                    exit;
+                }
+
                 $room['quantity'] = $quantity;
                 $rooms_for_session[] = $room;
 
@@ -150,11 +172,10 @@ class HomeController extends Controller
             }
         }
 
-        // 2. Calculate Final Total Amount
-        // Multiply the cost for one night by the total number of nights
+        // 5. Calculate Final Total Amount
         $totalAmount = $costPerNight * $totalNights;
 
-        // Save selected rooms and booking details to session
+        // 6. Save selected rooms and booking details to session
         $_SESSION['selected_rooms'] = $selectedRooms; // e.g. [2 => 1, 5 => 2]
         $_SESSION['rooms_data'] = $rooms_for_session;
         $_SESSION['check_in'] = $arrival;
@@ -162,6 +183,7 @@ class HomeController extends Controller
         $_SESSION['total_amount'] = $totalAmount;
         $_SESSION['total_nights'] = $totalNights;
 
+        // 7. Render View
         $this->view('home/booking-confirmation', [
             'arrival' => $arrival,
             'departure' => $departure,

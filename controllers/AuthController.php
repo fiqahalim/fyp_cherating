@@ -253,6 +253,11 @@ class AuthController extends Controller
 
     public function profile()
     {
+        // Start session if not started
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
         if (!isset($_SESSION['user_id'])) {
             header("Location: " . APP_URL . "/auth/login");
             exit;
@@ -310,7 +315,7 @@ class AuthController extends Controller
                 $adminModel = $this->model('AdminModel');
                 $adminId = $_SESSION['admin_id'] ?? $userId;
                 
-                $adminModel->updateProfileDetails($adminId, $username, $fullName, $email); 
+                $adminModel->updateProfileDetails($adminId, $username, $email);
             } else {
                 $customerModel = $this->model('CustomerModel');
                 $customerId = $_SESSION['customer_id'] ?? $userId;

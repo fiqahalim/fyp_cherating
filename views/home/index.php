@@ -200,11 +200,49 @@ $base_url = "http://localhost:8000/FYP/fyp_cherating"; //for macbook
 include_once __DIR__ . '/contact.php';
 ?>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <!-- Calendar Booking -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-   const calendarIcons = document.querySelectorAll(".date_cua");
+   const arrivalInput = document.getElementById("arrival_date");
+   const departureInput = document.getElementById("departure_date");
+    
+   // Get today's date in YYYY-MM-DD format
+   const today = new Date().toISOString().split('T')[0];
+    
+   // Set minimum date for arrival to today
+   arrivalInput.setAttribute('min', today);
 
+   // Update departure min date based on arrival selection
+   arrivalInput.addEventListener('change', function() {
+      if (this.value) {
+         // Departure must be at least 1 day after arrival
+         let arrivalDate = new Date(this.value);
+         arrivalDate.setDate(arrivalDate.getDate() + 1);
+         departureInput.setAttribute('min', arrivalDate.toISOString().split('T')[0]);
+      }
+   });
+
+   <?php 
+        // We use get() here. Ensure your Flash class doesn't clear 
+        // until this specific line is called.
+        $msg = Flash::get('error'); 
+    ?>
+    
+    const errorMessage = "<?= $msg ? addslashes($msg) : '' ?>";
+
+    if (errorMessage) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Booking Unavailable',
+            text: errorMessage,
+            confirmButtonColor: '#d33',
+            background: '#fff'
+        });
+    }
+
+   // Calendar Icon trigger logic
+   const calendarIcons = document.querySelectorAll(".date_cua");
    calendarIcons.forEach(function (icon) {
       icon.addEventListener("click", function () {
          const targetInputId = this.getAttribute("data-target");

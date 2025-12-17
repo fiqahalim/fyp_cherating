@@ -220,4 +220,55 @@ class BookingModel extends Model
 
         return $bookings;
     }
+
+    // Get fully booked dates:
+    public function getFullyBookedDates($daysAhead = 60)
+    {
+        // 1. Get total number of rooms available in the guesthouse
+        $stmtTotal = $this->db->prepare("SELECT SUM(total_rooms) as total_capacity FROM rooms WHERE status = 'active'");
+        $stmtTotal->execute();
+        $totalCapacity = (int)$stmtTotal->fetchColumn();
+
+        // 2. Query to get total rooms booked per day
+        $stmt = $this->db->prepare("
+            SELECT b.check_in, b.check_out, br.rooms_booked 
+            FROM bookings b
+            JOIN booking_rooms br ON b.id = br.booking_id
+            WHERE b.status = 'confirmed' 
+            AND b.check_out >= CURDATE()
+        ");
+        $stmt->execute();
+        $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $occupancyMap = [];
+
+        // 3. Process bookings to map occupancy per date
+        foreach ($bookings as $b) {
+            $start = new DateTime($b['check_in']);
+            $end = new DateTime($b['check_out']);
+            
+            // Interval is 1 day. DatePeriod excludes the 'check_out' day 
+            // which is correct (room is free on morning of check-out)
+            $interval = new DateInterval('P1D');
+            $period = new DatePeriod($start, $interval, $end);
+
+            foreach ($period as $date) {
+                $d = $date->format('Y-m-d');
+                if (!isset($occupancyMap[$d])) {
+                    $occupancyMap[$d] = 0;
+                }
+                $occupancyMap[$d] += (int)$b['rooms_booked'];
+            }
+        }
+
+        // 4. Identify dates where occupancy >= total capacity
+        $disabledDates = [];
+        foreach ($occupancyMap as $date => $currentOccupancy) {
+            if ($currentOccupancy >= $totalCapacity) {
+                $disabledDates[] = $date;
+            }
+        }
+
+        return $disabledDates;
+    }
 }

@@ -16,7 +16,34 @@ class AdminModel
         $stmt = $this->db->prepare("SELECT username, password FROM admins WHERE id = ?");
         $stmt->execute([$admin_id]);
         
-        return $stmt->fetch(PDO::FETCH_ASSOC);  // Return the admin data
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function updateProfileDetails($admin_id, $username, $email)
+    {
+        // The query ONLY updates non-sensitive fields
+        $stmt = $this->db->prepare(
+            "UPDATE admins SET username = :username, email = :email WHERE id = :admin_id"
+        );
+
+        $stmt->bindParam(':admin_id', $admin_id);
+        $stmt->bindParam(':username', $username);
+        $stmt->bindParam(':email', $email);
+
+        return $stmt->execute();
+    }
+
+    public function updateAdminPassword($admin_id, $hashedPassword)
+    {
+        // The query ONLY updates the password field
+        $stmt = $this->db->prepare(
+            "UPDATE admins SET password = :password WHERE id = :admin_id"
+        );
+
+        $stmt->bindParam(':admin_id', $admin_id);
+        $stmt->bindParam(':password', $hashedPassword);
+
+        return $stmt->execute();
     }
 
     // Update Admin Profile

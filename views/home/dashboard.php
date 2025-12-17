@@ -177,8 +177,8 @@ $allBookings = array_merge($upcomingBookings, $pastBookings);
 <div class="modal fade" id="bookingDetailsModal" tabindex="-1" aria-labelledby="bookingDetailsModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
-      <div class="modal-header bg-dark text-white">
-        <h5 class="modal-title" id="bookingDetailsModalLabel">Booking Details: <span id="modal-ref-no"></span></h5>
+      <div class="modal-header bg-dark">
+        <h5 class="modal-title text-white" id="bookingDetailsModalLabel">Booking Details: <span id="modal-ref-no"></span></h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
@@ -306,7 +306,7 @@ $(document).ready(function() {
     function getStatusBadgeJs(status) {
         status = status.toLowerCase();
         switch (status) {
-            case 'confirmed': return '<span class="badge bg-success">Confirmed</span>';
+            case 'confirmed': return '<span class="badge bg-success text-white">Confirmed</span>';
             case 'pending': return '<span class="badge bg-warning text-dark">Pending</span>';
             case 'cancelled': return '<span class="badge bg-danger">Cancelled</span>';
             default: return '<span class="badge bg-secondary">' + ucfirst(status) + '</span>';
