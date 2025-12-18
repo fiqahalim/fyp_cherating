@@ -2,6 +2,18 @@
 
 class AuthController extends Controller
 {
+    // Declare the model property
+    private $bookingModel, $contactModel, $roomModel;
+
+    // Constructor to initialize the model
+    public function __construct()
+    {
+        // Initialize the model (only once)
+        $this->bookingModel = $this->model('BookingModel');
+        $this->contactModel = $this->model('ContactModel');
+        $this->roomModel = $this->model('RoomModel');
+    }
+
     public function login()
     {
         $this->view('auth/login');
@@ -208,6 +220,28 @@ class AuthController extends Controller
 
         // Handle Admin Dashboard
         if ($type === 'admin') {
+
+            $selectedYear = $_GET['year'] ?? date('Y');
+            $data['selectedYear'] = $selectedYear;
+            $data['availableYears'] = $this->bookingModel->getBookingYears();
+
+            // Fetch data using model methods
+            $data['totalBookings'] = $this->bookingModel->getTotalBookings();
+            $data['totalRooms'] = $this->roomModel->getTotalRooms();
+            $data['totalRevenue'] = $this->bookingModel->getTotalRevenue();
+            $data['totalMessages'] = $this->contactModel->getTotalMessages();
+
+            // 1. Chart Data: Monthly Revenue
+            $monthlyRaw = $this->bookingModel->getMonthlyRevenue(date('Y'));
+            $chartData = array_fill(1, 12, 0);
+
+            foreach ($monthlyRaw as $row) {
+                $chartData[(int)$row['month']] = (float)$row['total'];
+            }
+
+            $data['revenueChartValues'] = array_values($chartData);
+            $data['unpaidBookings'] = $this->bookingModel->getUnpaidBookings(5);
+            $data['recentMessages'] = $this->contactModel->getAllMessages();
 
             $this->view('admin/dashboard', $data);
             return;

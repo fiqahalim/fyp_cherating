@@ -307,4 +307,72 @@ class BookingModel extends Model
 
         return $disabledDates;
     }
+
+    public function getTotalRevenue()
+    {
+        // Sum of total_amount from all bookings
+        $stmt = $this->db->prepare("SELECT SUM(total_amount) FROM bookings");
+        $stmt->execute();
+        
+        return $stmt->fetchColumn() ?: 0;
+    }
+
+    public function getMonthlyRevenue($year = null)
+    {
+        $year = $year ?: date('Y');
+        // Using payment_status = 'paid' ensures we only chart actual income
+        $sql = "SELECT MONTH(created_at) as month, SUM(total_amount) as total 
+                FROM bookings 
+                WHERE YEAR(created_at) = :year AND payment_status = 'paid'
+                GROUP BY MONTH(created_at)";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':year' => $year]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getUnpaidBookings($limit = 5)
+    {
+        $sql = "SELECT b.*, c.full_name, c.phone 
+                FROM bookings b
+                JOIN customers c ON b.customer_id = c.id
+                WHERE b.payment_status != 'paid' AND b.status != 'cancelled'
+                ORDER BY b.created_at DESC
+                LIMIT :limit";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Get all unique years from the bookings table
+    public function getBookingYears()
+    {
+        $stmt = $this->db->prepare("SELECT DISTINCT YEAR(created_at) as year FROM bookings ORDER BY year DESC");
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    // Fetching 'pending' bookings as "New Alerts"
+    public function getNewBookings($limit = 4)
+    {
+        $sql = "SELECT b.*, c.full_name 
+                FROM bookings b 
+                JOIN customers c ON b.customer_id = c.id 
+                WHERE b.status = 'pending' 
+                ORDER BY b.created_at DESC LIMIT :limit";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getNewBookingsCount()
+    {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM bookings WHERE status = 'pending'");
+        $stmt->execute();
+        return $stmt->fetchColumn();
+    }
 }

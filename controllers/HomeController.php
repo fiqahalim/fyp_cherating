@@ -393,7 +393,7 @@ class HomeController extends Controller
         <body onload="window.print();">
             <div class="container">
                 <div class="header">
-                    <img src="' . APP_URL . '/assets/images/logo.png" class="logo" alt="Logo">
+                    <img src="' . APP_URL . '/assets/images/Cherating_Indah_Logo.png" class="logo" alt="Logo">
                     <h2>Cherating Guest House</h2>
                     <p class="contact">Contact: +601111034533 | Address: 4/1000 Kampung Budaya, Jalan Kampung Cherating Lama, 26080 Kuantan, Pahang</p>
                 </div>

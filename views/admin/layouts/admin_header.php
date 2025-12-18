@@ -36,9 +36,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <!-- Sidebar - Brand -->
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#" onclick="event.preventDefault();">
                 <div class="sidebar-brand-icon rotate-n-15">
-                    <i class="fas fa-laugh-wink"></i>
+                    <!-- <i class="fas fa-laugh-wink"></i> -->
+                    <img src="<?= $base_url ?>/assets/images/Cherating_Indah_Logo.png" alt="Cherating Guest House Logo" />
                 </div>
-                <div class="sidebar-brand-text mx-3">Cherating Guest House</div>
+                <!-- <div class="sidebar-brand-text mx-3">Cherating Guest House</div> -->
             </a>
             <!-- Divider -->
             <hr class="sidebar-divider my-0">
@@ -214,7 +215,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
                         <li class="nav-item dropdown no-arrow">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">Douglas McGee</span>
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">
+                                    <?= $_SESSION['full_name'] ?? 'Admin' ?>
+                                </span>
                                 <img class="img-profile rounded-circle"
                                     src="<?= $base_url ?>/assets/images/undraw_profile.svg">
                             </a>
