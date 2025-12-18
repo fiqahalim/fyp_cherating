@@ -375,4 +375,21 @@ class BookingModel extends Model
         $stmt->execute();
         return $stmt->fetchColumn();
     }
+
+    public function addPayment($data)
+    {
+        $sql = "INSERT INTO payments (booking_id, payment_ref_no, payment_method, amount, payment_type, receipt_image, verified) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $stmt = $this->db->prepare($sql);
+        
+        return $stmt->execute([
+            $data['booking_id'],
+            $data['payment_ref_no'],
+            $data['payment_method'],
+            $data['amount'],
+            $data['payment_type'],
+            $data['receipt_image'],
+            $data['status']
+        ]);
+    }
 }

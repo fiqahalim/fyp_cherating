@@ -99,9 +99,9 @@ class HomeController extends Controller
     // Booking confirmation form (after selecting rooms and quantities)
     public function bookingConfirmation()
     {
-        $arrival = $_POST['arrival_date'] ?? null;
-        $departure = $_POST['departure_date'] ?? null;
-        $selectedRooms = $_POST['rooms'] ?? [];
+        $arrival = $_POST['arrival_date'] ?? $_SESSION['check_in'] ?? null;
+        $departure = $_POST['departure_date'] ?? $_SESSION['check_out'] ?? null;
+        $selectedRooms = $_POST['rooms'] ?? $_SESSION['selected_rooms'] ?? [];
         $totalAmount = 0;
 
         if (!$arrival || !$departure || empty($selectedRooms)) {
@@ -175,6 +175,9 @@ class HomeController extends Controller
         // 5. Calculate Final Total Amount
         $totalAmount = $costPerNight * $totalNights;
 
+        $merchantId = 'YOUR_MERCHANT_ID';
+        $qrUrl = "https://www.tngdigital.com.my/pay?amount=" . number_format($totalAmount, 2, '.', '') . "&merchant_id=" . $merchantId;
+
         // 6. Save selected rooms and booking details to session
         $_SESSION['selected_rooms'] = $selectedRooms; // e.g. [2 => 1, 5 => 2]
         $_SESSION['rooms_data'] = $rooms_for_session;
@@ -190,6 +193,7 @@ class HomeController extends Controller
             'rooms' => $rooms_for_session,
             'totalAmount' => $totalAmount,
             'totalNights' => $totalNights,
+            'qrUrl' => $qrUrl,
         ]);
     }
 
@@ -224,6 +228,13 @@ class HomeController extends Controller
             exit;
         }
 
+        // Validate if receipt is uploaded
+        if (!isset($_FILES['receipt']) || $_FILES['receipt']['error'] !== UPLOAD_ERR_OK) {
+            Flash::set('error', 'Please upload your payment receipt.');
+            header('Location: ' . APP_URL . '/booking-confirmation');
+            exit;
+        }
+
         // 3. Customer Existence Check & Flow Control
         $customerExists = $this->customerModel->checkExistence($email);
         $customerId = null;
@@ -240,7 +251,7 @@ class HomeController extends Controller
                     exit;
                 }
                 // Customer created successfully, proceed to booking finalization
-                $this->handleFinalBooking($customerId, $_POST);
+                $this->handleFinalBooking($customerId, $_POST, $_FILES['receipt']);
             } else {
                 $_SESSION['pending_booking_data'] = $_POST;
 
@@ -262,11 +273,11 @@ class HomeController extends Controller
             }
 
             // Customer exists and is identified, proceed to final booking
-            $this->handleFinalBooking($customerId, $_POST);
+            $this->handleFinalBooking($customerId, $_POST, $_FILES['receipt']);
         }
     }
 
-    private function handleFinalBooking($customerId, $postData)
+    private function handleFinalBooking($customerId, $postData, $fileData)
     {
         // 1. Retrieve essential details
         $check_in = $postData['check_in']; 
@@ -276,6 +287,19 @@ class HomeController extends Controller
         $totalAmount = $postData['total_amount'] ?? 0.0;
         $payment_details = '';
         $totalNights = $_SESSION['total_nights'] ?? 1;
+
+        $uploadDir = 'uploads/receipts/';
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+
+        $fileExtension = pathinfo($fileData['name'], PATHINFO_EXTENSION);
+        $fileName = 'receipt_' . time() . '_' . uniqid() . '.' . $fileExtension;
+        $targetPath = $uploadDir . $fileName;
+
+        if (!move_uploaded_file($fileData['tmp_name'], $targetPath)) {
+            Flash::set('error', 'Failed to save the receipt image.');
+            header('Location: ' . APP_URL . '/booking-confirmation');
+            exit;
+        }
 
         // 2. Recalculate payment details
         if ($payment_method === 'card') {
@@ -301,6 +325,16 @@ class HomeController extends Controller
 
         // 4. Handle Result
         if ($booking_id) {
+            $this->bookingModel->addPayment([
+                'booking_id'      => $booking_id,
+                'payment_ref_no'  => 'PAY-' . strtoupper(uniqid()),
+                'payment_method'  => $payment_method,
+                'amount'          => $totalAmount, // Or set a specific deposit amount
+                'payment_type'    => 'deposit',
+                'receipt_image'   => $targetPath,
+                'status'          => 'pending'
+            ]);
+
             // Clean up session and redirect to confirmation page
             unset($_SESSION['selected_rooms']);
             unset($_SESSION['pending_booking_data']);

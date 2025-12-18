@@ -34,7 +34,7 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
         <!-- LEFT COLUMN – FORM -->
         <div class="col-lg-8">
             <!-- HEADER -->
-            <form method="POST" action="<?= APP_URL ?>/confirm-booking" id="booking_form">
+            <form method="POST" action="<?= APP_URL ?>/confirm-booking" id="booking_form" enctype="multipart/form-data">
                 <!-- HIDDEN INPUTS for Booking Data -->
                 <input type="hidden" name="check_in" value="<?= get_value('check_in', $_SESSION['check_in'] ?? '') ?>">
                 <input type="hidden" name="check_out" value="<?= get_value('check_out', $_SESSION['check_out'] ?? '') ?>">
@@ -115,7 +115,7 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
 
                     <!-- NEW CUSTOMER FIELDS (Hidden by default, shown if flag is set) -->
                     <div id="new_customer_fields" class="row mt-3" style="display:none;">
-                        <p class="text-info small">It looks like you don't have an account. Please create a username and password to proceed.</p>
+                        <p class="text-danger small">It looks like you don't have an account. Please create a username and password to proceed.</p>
                         
                         <div class="col-md-6 mb-3">
                             <label>Username <span class="text-danger">*</span></label>
@@ -146,8 +146,18 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
                         </div>
 
                     <div id="qr_payment_details" class="payment-method-fields" style="display:block;">
-                        <p>Scan the QR code below to complete your payment:</p>
-                        <div id="qr_code_container"></div>
+                        <p>Scan the QR code below to complete your deposit payment:</p>
+                        <div id="qr_code_container" class="mt-3">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=<?php echo urlencode($qrUrl ?? ''); ?>" 
+                                alt="Payment QR Code" 
+                                style="border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
+                        </div>
+                        <div class="mt-3">
+                            <label for="receipt" class="form-label"><strong>Upload Payment Receipt (Required)</strong></label>
+                            <input type="file" name="receipt" id="receipt" class="form-control" accept="image/*,.pdf" required>
+                            <small class="text-muted">Please upload a screenshot or PDF of your transaction.</small>
+                        </div>
+                        <p class="mt-2"><small>Please ensure the payment is successful before clicking "Confirm Booking".</small></p>
                     </div>
                 </div>
 
