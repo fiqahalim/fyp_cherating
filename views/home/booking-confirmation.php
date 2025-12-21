@@ -81,8 +81,12 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
                                     <p class="text-muted small mb-1"><?= htmlspecialchars($room['description']) ?></p>
 
                                     <p class="mb-1">
-                                        <strong>RM <?= number_format($room['price'], 2) ?></strong> per night 
-                                        × <?= $room['quantity'] ?> room(s)
+                                        <?php
+                                            $roomTotal = $room['calculated_total'] ?? ($room['price'] * $room['quantity'] * $totalNights);
+                                            $dynamic_rate = $roomTotal / ($totalNights * $room['quantity']);
+                                        ?>
+                                        <strong>RM <?= number_format($dynamic_rate, 2) ?></strong> per night 
+                                        × <?= (int)$room['quantity'] ?> room(s)
                                     </p>
 
                                     <input type="hidden" 
@@ -133,31 +137,31 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
                 <div class="booking-box mb-4">
                     <h4 class="section-title">Payment Method</h4>
                     <select id="payment_method" name="payment_method" class="form-control mb-3" required>
-                        <option value="qr" selected>QR Pay</option>
-                        
-                        <option value="card" disabled style="display:none;">Credit / Debit Card</option>
-                        <option value="paypal" disabled style="display:none;">PayPal</option>
+                        <option value="qr">QR Pay (Manual Verification)</option>
+                        <option value="fpx" selected>Online Banking / FPX (Billplz)</option>
                     </select>
-                    
-                    <div id="card_payment_details" class="payment-method-fields" style="display:none;">
-                        </div>
 
-                    <div id="paypal_payment_details" class="payment-method-fields" style="display:none;">
-                        </div>
-
-                    <div id="qr_payment_details" class="payment-method-fields" style="display:block;">
+                    <div id="qr_payment_details" class="payment-method-fields" style="display:none;">
                         <p>Scan the QR code below to complete your deposit payment:</p>
                         <div id="qr_code_container" class="mt-3">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=<?php echo urlencode($qrUrl ?? ''); ?>" 
+                            <?php
+                                $displayQrLink = $qrUrl ?? $_SESSION['qr_url_raw'] ?? ''; 
+                            ?>
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=<?= urlencode($displayQrLink) ?>" 
                                 alt="Payment QR Code" 
                                 style="border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
                         </div>
-                        <div class="mt-3">
+                        <div class="mt-3" id="receipt_upload_wrapper">
                             <label for="receipt" class="form-label"><strong>Upload Payment Receipt (Required)</strong></label>
-                            <input type="file" name="receipt" id="receipt" class="form-control" accept="image/*,.pdf" required>
-                            <small class="text-muted">Please upload a screenshot or PDF of your transaction.</small>
+                            <input type="file" name="receipt" id="receipt" class="form-control" accept="image/*,.pdf">
+                            <small class="text-danger">Please upload a screenshot or PDF of your transaction.</small>
                         </div>
-                        <p class="mt-2"><small>Please ensure the payment is successful before clicking "Confirm Booking".</small></p>
+                    </div>
+
+                    <div id="fpx_payment_details" class="payment-method-fields" style="display:none;">
+                        <div class="alert alert-info">
+                            You will be redirected to the <strong>Billplz Secure Payment Gateway</strong> to complete your transaction via FPX.
+                        </div>
                     </div>
                 </div>
 
@@ -182,6 +186,9 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
                     <strong>Check-out:</strong> <?= htmlspecialchars($departure ?? $_SESSION['check_out']) ?>
                 </div>
                 <div class="mb-3">
+                    <strong>Total Guests:</strong> <?= (int)($guests ?? $_SESSION['guests'] ?? 0) ?> Person(s)
+                </div>
+                <div class="mb-3">
                     <strong>Total Night(s):</strong> 
                     <span class="fw-bold"><?= (int)$totalNights ?></span>
                 </div>
@@ -202,49 +209,57 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
             <div class="sidebar-card-price p-3">
                 <h4 class="fw-bold mb-3">Your Price Summary</h4>
 
-                <?php $total_room_cost = 0; ?>
-                <?php $total_rooms_booked = 0; ?>
+                <?php 
+                $total_rooms_booked = 0; 
+                // We use the $totalAmount calculated by the controller logic
+                ?>
 
                 <?php foreach ($rooms as $room): ?>
                     <?php if (($room['quantity'] ?? 0) > 0 && ($room['status'] ?? 'active') === 'active'): ?>
                         <?php 
-                            $room_price_per_night = $room['price'];
                             $room_quantity = $room['quantity'];
-                            $room_subtotal = $room_price_per_night * $room_quantity;
-                            $total_room_cost += $room_subtotal;
                             $total_rooms_booked += $room_quantity;
+                            $room_subtotal = $room['calculated_total'] ?? ($room['price'] * $room_quantity * $totalNights);
+                            $avg_night_rate = $room_subtotal / ($totalNights * $room_quantity);
                         ?>
-                        <div class="d-flex justify-content-between small text-muted">
+                        <div class="d-flex justify-content-between small text-muted mb-2">
                             <span>
-                                <?= (int)$room_quantity ?> × <?= htmlspecialchars($room['name']) ?> 
-                                (@ RM<?= number_format($room_price_per_night, 2) ?> / night)
+                                <?= $room_quantity ?> × <?= htmlspecialchars($room['name']) ?> 
+                                <br><small>(Avg. RM <?= number_format($avg_night_rate, 2) ?> / night)</small>
                             </span>
                             <span>RM <?= number_format($room_subtotal, 2) ?></span>
                         </div>
                     <?php endif; ?>
                 <?php endforeach; ?>
                 
-                <div class="d-flex justify-content-between py-1 border-bottom">
-                    <span>Total Room Cost</span>
-                    <span class="fw-bold">RM <?= number_format($total_room_cost, 2) ?></span>
+                <div class="d-flex justify-content-between py-1 border-top">
+                    <span>Grand Total (<?= (int)$totalNights ?> nights)</span>
+                    <span class="fw-bold">RM <?= number_format($totalAmount, 2) ?></span>
                 </div>
 
-                <div class="d-flex justify-content-between py-1">
-                    <span>Total Nights</span>
-                    <span class="fw-bold">x <?= (int)$totalNights ?></span>
+                <hr class="mt-2 mb-2">
+
+                <div class="d-flex justify-content-between text-primary">
+                    <span><strong>Deposit to Pay Now (35%):</strong></span>
+                    <strong>RM <?= number_format($totalAmount * 0.35, 2) ?></strong>
                 </div>
 
-                <hr class="mt-1 mb-2">
+                <div class="d-flex justify-content-between text-muted small">
+                    <span>Balance at Check-in:</span>
+                    <span>RM <?= number_format($totalAmount - ($totalAmount * 0.35), 2) ?></span>
+                </div>
 
-                <div class="d-flex justify-content-between text-danger" style="font-size:25px;">
-                    <span>Grand Total:</span>
-                    <strong class="text-danger">RM <?= number_format($total_amount, 2) ?></strong>
+                <hr class="mt-2 mb-2">
+
+                <div class="d-flex justify-content-between text-danger" style="font-size:22px;">
+                    <span>Total Amount:</span>
+                    <strong class="text-danger">RM <?= number_format($totalAmount, 2) ?></strong>
                 </div>
 
                 <p class="text-muted small mt-2 mb-0">
-                    * Total amount covers **<?= (int)$totalNights ?> night(s)** for **<?= $total_rooms_booked ?> room(s)**.
+                    * Total covers **<?= (int)$totalNights ?> night(s)** for **<?= $total_rooms_booked ?> room(s)**.
                 </p>
-                <p class="text-muted small mb-0">* Additional fees (e.g., local taxes) may apply upon check-in.</p>
+                <p class="text-muted small mb-0">* Surcharges for weekends/holidays are included in the average rate.</p>
             </div>
 
             <!-- Review Rules -->
@@ -269,69 +284,53 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 1. Two-Step Customer Fields Logic
+    // 1. Define all elements first (Add checks to prevent null errors)
+    const paymentMethodSelect = document.getElementById('payment_method'); // Make sure your <select> has id="payment_method"
+    const qrDetails = document.getElementById('qr_payment_details');
+    const fpxDetails = document.getElementById('fpx_payment_details');
+    const receiptInput = document.getElementById('receipt');
+    
     const newCustomerFields = document.getElementById('new_customer_fields');
     const usernameInput = document.getElementById('guest_username');
     const passwordInput = document.getElementById('guest_password');
     const showFieldsElement = document.getElementById('show_new_customer_fields_flag');
-    
-    // Check the flag set by the PHP logic (1 == true, 0 == false)
+
+    // 2. Two-Step Customer Fields Logic
     const showFields = showFieldsElement ? (showFieldsElement.value === '1') : false;
 
-    if (showFields) {
-        // Step 2: Controller prompted the user for credentials. Show the fields.
+    if (showFields && newCustomerFields) {
         newCustomerFields.style.display = 'flex'; 
-        
-        // Make them required (Crucial for the second submission)
         if (usernameInput) usernameInput.setAttribute('required', 'required');
         if (passwordInput) passwordInput.setAttribute('required', 'required');
-        
-        // Scroll to the fields for immediate attention
         newCustomerFields.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
     
-    // 2. Payment Details Visibility Handler
-    const paymentMethodSelect = document.getElementById('payment_method');
-    const cardDetails = document.getElementById('card_payment_details');
-    const paypalDetails = document.getElementById('paypal_payment_details');
-    const qrDetails = document.getElementById('qr_payment_details');
-
-    const cardFields = [
-        document.getElementById('card_number'), 
-        document.getElementById('card_expiry'), 
-        document.getElementById('card_cvc')
-    ];
-    const paypalFields = [document.getElementById('paypal_email')];
-
+    // 3. Payment Details Visibility Handler
     function updatePaymentFields() {
+        if (!paymentMethodSelect) return;
+
         const selectedMethod = paymentMethodSelect.value;
+        const qrDetails = document.getElementById('qr_payment_details');
+        const fpxDetails = document.getElementById('fpx_payment_details');
+        const receiptInput = document.getElementById('receipt');
         
-        // Hide all fields initially
-        cardDetails.style.display = 'none';
-        paypalDetails.style.display = 'none';
-        qrDetails.style.display = 'none';
-
-        // Remove 'required' from all dynamic fields first
-        [...cardFields, ...paypalFields].forEach(el => {
-            if (el) el.removeAttribute('required');
-        });
-
-        // Show fields based on selection and set 'required'
-        if (selectedMethod === 'card') {
-            cardDetails.style.display = 'block';
-            cardFields.forEach(el => { if (el) el.setAttribute('required', 'required'); });
-        } else if (selectedMethod === 'paypal') {
-            paypalDetails.style.display = 'block';
-            paypalFields.forEach(el => { if (el) el.setAttribute('required', 'required'); });
-        } else if (selectedMethod === 'qr') {
+        // Use Optional Chaining or check existence to prevent "null" errors
+        if (selectedMethod === 'qr') {
             qrDetails.style.display = 'block';
-            // QR payment requires no extra fields
+            fpxDetails.style.display = 'none';
+            receiptInput.setAttribute('required', 'required');
+        } else {
+            qrDetails.style.display = 'none';
+            fpxDetails.style.display = 'block';
+            receiptInput.removeAttribute('required');
+            receiptInput.value = "";
         }
     }
 
+    // 4. Attach Event Listener safely
     if (paymentMethodSelect) {
         paymentMethodSelect.addEventListener('change', updatePaymentFields);
-        // Initialize fields on load (to show the correct fields if the form was reloaded)
+        // Run once on page load to set initial state
         updatePaymentFields();
     }
 });

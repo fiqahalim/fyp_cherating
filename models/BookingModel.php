@@ -8,6 +8,8 @@ class BookingModel extends Model
             // Begin transaction
             $this->db->beginTransaction();
 
+            $guests = $_SESSION['guests'] ?? 1;
+
             // Generate a unique booking reference number
             $datePart = date('Ymd');
             $randomPart = strtoupper(substr(uniqid('', true), -6));
@@ -16,13 +18,14 @@ class BookingModel extends Model
             // Insert main booking record (summary)
             $stmt = $this->db->prepare("
                 INSERT INTO bookings 
-                (customer_id, booking_ref_no, check_in, check_out, total_nights, total_amount, status)
-                VALUES (?, ?, ?, ?, ?, ?, 'confirmed')
+                (customer_id, booking_ref_no, guests, check_in, check_out, total_nights, total_amount, status, payment_status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', 'partial')
             ");
 
             $stmt->execute([
                 $customerId, 
-                $booking_ref_no, 
+                $booking_ref_no,
+                (int)$guests,
                 $check_in, 
                 $check_out,
                 (int)$totalNights,
@@ -104,7 +107,9 @@ class BookingModel extends Model
                 c.phone,
                 p.payment_method,
                 p.payment_ref_no,
-                p.payment_date
+                p.payment_date,
+                p.remarks,
+                p.amount as deposit_paid
             FROM bookings b
             LEFT JOIN customers c ON b.customer_id = c.id
             LEFT JOIN payments p ON b.id = p.booking_id
@@ -378,18 +383,79 @@ class BookingModel extends Model
 
     public function addPayment($data)
     {
-        $sql = "INSERT INTO payments (booking_id, payment_ref_no, payment_method, amount, payment_type, receipt_image, verified) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO payments (booking_id, billplz_id, payment_ref_no, payment_method, amount, payment_type, receipt_image, verified) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->db->prepare($sql);
         
         return $stmt->execute([
             $data['booking_id'],
+            $data['billplz_id'] ?? null,
             $data['payment_ref_no'],
             $data['payment_method'],
             $data['amount'],
             $data['payment_type'],
-            $data['receipt_image'],
-            $data['status']
+            $data['receipt_image'] ?? null,
+            $data['verified'] ?? 'pending'
         ]);
+    }
+
+    public function getPaymentByBillplzId($billplz_id)
+    {
+        $stmt = $this->db->prepare("SELECT * FROM payments WHERE billplz_id = ?");
+        $stmt->execute([$billplz_id]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // Update payment record based on Billplz ID
+    public function updatePaymentStatus($billplz_id, $status)
+    {
+        $stmt = $this->db->prepare("UPDATE payments SET verified = 'approved' WHERE billplz_id = ?");
+        
+        return $stmt->execute([$billplz_id]);
+    }
+
+    // Update the main booking status
+    public function updateBookingStatus($booking_id, $payment_status, $booking_status)
+    {
+        $stmt = $this->db->prepare("UPDATE bookings SET payment_status = ?, status = ? WHERE id = ?");
+
+        return $stmt->execute([$payment_status, $booking_status, $booking_id]);
+    }
+
+    // Add this to BookingModel.php
+    public function verifyBillplzPayment($bill_id)
+    {
+        $api_key = 'd6f9bdfc-70fd-4f17-8129-7daa4302905f';
+        
+        $ch = curl_init('https://www.billplz-sandbox.com/api/v3/bills/' . $bill_id);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+        curl_setopt($ch, CURLOPT_USERPWD, $api_key . ":");
+        
+        $response = curl_exec($ch);
+        $data = json_decode($response, true);
+        
+        if (isset($data['paid']) && $data['paid'] === true && $data['state'] === 'paid') {
+            // Update database to 'approved'
+            $stmt = $this->db->prepare("UPDATE payments SET verified = 'approved' WHERE billplz_id = ?");
+            $stmt->execute([$bill_id]);
+            return true;
+        }
+
+        // Log error if needed for debugging on localhost
+        if (isset($data['error'])) {
+            file_put_contents('debug_verify.txt', json_encode($data['error']), FILE_APPEND);
+        }
+
+        return false;
+    }
+
+    public function getPaymentByBookingId($booking_id)
+    {
+        $stmt = $this->db->prepare("SELECT * FROM payments WHERE booking_id = ? LIMIT 1");
+        $stmt->execute([$booking_id]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }

@@ -823,9 +823,56 @@ button {
      transition: ease-in all 0.5s;
 }
 
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    background-color: #e9ecef;
+    color: #495057;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+    border: 1px solid #dee2e6;
+}
+
+#reviewsModal .modal-body::-webkit-scrollbar {
+    width: 6px;
+}
+#reviewsModal .modal-body::-webkit-scrollbar-thumb {
+    background-color: #cbd5e0;
+    border-radius: 10px;
+}
+
+/* Review Card Styling */
+.review-card {
+    transition: background 0.2s;
+    background: #fff;
+}
+.review-card:hover {
+    background: #f8f9fa;
+}
 
 /** end our_room section **/
 
+/* 360 Virtual Tour */
+.custom-hotspot {
+    height: 30px;
+    width: 30px;
+    background: #ffc107;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+}
 
 /** gallery  section **/
 

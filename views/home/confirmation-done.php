@@ -1,20 +1,31 @@
 <div class="container mt-4 mb-4">
-<?php include_once __DIR__ . '/../layout/progression-bar-done.php'; ?>
+    <?php include_once __DIR__ . '/../layout/progression-bar-done.php'; ?>
+    <?php Flash::display(); ?>
 </div>
 
 <div class="container mb-5 p-4 shadow rounded bg-white" style="max-width: 900px;">
     <div class="text-center">
         <img src="<?= APP_URL ?>/assets/images/checkmark.png" alt="Confirmed" width="80" class="mb-3">
         <h2 class="text-success">Booking Confirmed!</h2>
-        <p><strong>Booking Reference:</strong> <?= htmlspecialchars($booking['booking_ref_no']) ?></p>
+        <p class="text-primary"><strong>Booking Reference:</strong> <?= htmlspecialchars($booking['booking_ref_no']) ?></p>
         <p class="lead">Thank you, <strong><?= htmlspecialchars($booking['full_name']) ?></strong>! Your booking has been successfully confirmed.</p>
     </div>
+
+    <?php if (isset($payment) && $payment['payment_method'] === 'fpx' && $payment['verified'] === 'pending'): ?>
+        <div class="alert alert-warning border-warning shadow-sm mt-4 text-center">
+            <h5 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Localhost Payment Sync</h5>
+            <p>If you have already completed your payment but the status below still says <strong>PENDING</strong>, please click the button below:</p>
+            <a href="<?= APP_URL ?>/verify-payment/<?= $payment['billplz_id'] ?>" class="btn btn-warning fw-bold">
+                <i class="fas fa-sync-alt"></i> VERIFY MY PAYMENT NOW
+            </a>
+        </div>
+    <?php endif; ?>
 
     <hr>
 
     <div class="row mt-4">
-        <div class="col-md-7 border-end">
-            <h3 class="text-primary mb-3">Your Itinerary & Details</h3>
+        <div class="col-md-6 border-end">
+            <h3 class="mb-3">Your Itinerary & Details</h3>
 
             <div class="d-flex justify-content-between p-3 mb-3 bg-light rounded">
                 <div>
@@ -53,49 +64,54 @@
             </ul>
         </div>
         
-        <div class="col-md-5">
-            <div class="sidebar-card-price p-3 bg-light rounded shadow-sm">
-                <h4 class="fw-bold mb-3 text-center text-primary">Price Summary</h4>
+        <div class="col-md-6">
+            <div class="sidebar-card-price p-3 bg-dark rounded shadow-sm">
+                <h4 class="fw-bold mb-3 text-center text-white">Price Summary</h4>
+
+                <?php
+                    $total_rooms_count = 0;
+                    foreach($booking['rooms'] as $r) { $total_rooms_count += (int)$r['rooms_booked']; }
+                    
+                    $avg_price_per_room_night = $booking['total_amount'] / ($booking['total_nights'] * $total_rooms_count);
+                ?>
                 
-                <?php 
-                $cost_per_night = 0;
-                foreach ($booking['rooms'] as $room): 
-                    $room_subtotal = (float)$room['price'] * (int)$room['rooms_booked'];
-                    $cost_per_night += $room_subtotal;
+                <?php foreach ($booking['rooms'] as $room): 
+                    $room_qty = (int)$room['rooms_booked'];
+                    $room_display_price = $avg_price_per_room_night * $room_qty;
                 ?>
                     <div class="d-flex justify-content-between small text-muted">
-                        <span>
-                            <?= (int)$room['rooms_booked'] ?> × <?= htmlspecialchars($room['name']) ?> 
-                            (@ RM<?= number_format($room['price'], 2) ?> / night)
+                        <span class="text-light">
+                            <?= $room_qty ?> × <?= htmlspecialchars($room['name']) ?> 
+                            <br><small>(Avg. RM <?= number_format($avg_price_per_room_night, 2) ?> / night)</small>
                         </span>
-                        <span>RM <?= number_format($room_subtotal, 2) ?></span>
+                        <span class="text-light">RM <?= number_format($room_display_price, 2) ?></span>
                     </div>
                 <?php endforeach; ?>
                 
-                <div class="d-flex justify-content-between py-1 border-top mt-2">
-                    <span>Total Room Cost (1 Night)</span>
-                    <span class="fw-bold">RM <?= number_format($cost_per_night, 2) ?></span>
-                </div>
-                
-                <div class="d-flex justify-content-between py-1 border-bottom">
-                    <span>Total Nights</span>
-                    <span class="fw-bold">x <?= (int)$booking['total_nights'] ?></span>
+                <div class="d-flex justify-content-between py-1 border-top mt-2 text-white">
+                    <span>Subtotal (per night)</span>
+                    <span class="fw-bold">RM <?= number_format($avg_price_per_room_night * $total_rooms_count, 2) ?></span>
                 </div>
 
                 <div class="d-flex justify-content-between py-3 text-danger" style="font-size:25px;">
                     <span>Grand Total:</span>
-                    <strong class="text-dark">RM <?= number_format($booking['total_amount'], 2) ?></strong>
+                    <strong class="text-danger">RM <?= number_format($booking['total_amount'], 2) ?></strong>
+                </div>
+
+                <div class="d-flex justify-content-between text-info fw-bold">
+                    <span>Deposit Paid (35%):</span>
+                    <span>RM <?= number_format($booking['deposit_paid'], 2) ?></span>
                 </div>
                 
                 <div class="py-1">
                     <strong class="d-block text-muted">Payment Method:</strong>
-                    <span><?= ucfirst($booking['payment_method']) ?> (<?= ucfirst($booking['payment_status']) ?>)</span>
+                    <span class="text-white">Method: <?= strtoupper($booking['payment_method']) ?></span> | 
+                    <span class="text-info fw-bold">Status: <?= strtoupper($payment['verified'] ?? $booking['payment_status']) ?></span>
                 </div>
                 <div class="py-1">
                     <strong class="d-block text-muted">Booking Status:</strong>
-                    <span class="text-success fw-bold"><?= ucfirst($booking['status']) ?></span>
+                    <span class="text-info fw-bold"><?= ucfirst($booking['status']) ?></span>
                 </div>
-
             </div>
         </div>
     </div>
@@ -103,7 +119,7 @@
     <hr class="mt-5">
 
     <div class="text-center">
-        <a href="<?= APP_URL ?>/download-invoice/<?= $booking['id'] ?>" class="btn btn-primary btn-lg me-3">Download Invoice</a>
+        <a href="<?= APP_URL ?>/download-invoice/<?= $booking['id'] ?>" class="btn btn-primary btn-lg me-3" target="_blank">Download Invoice</a>
         <a href="<?= APP_URL ?>" class="btn btn-outline btn-lg">Back to Home</a>
     </div>
 </div>

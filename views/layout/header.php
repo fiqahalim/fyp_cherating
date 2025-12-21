@@ -90,6 +90,10 @@ if (str_starts_with($current_page, $base_path)) {
                                             <a class="nav-link <?= $current_page == 'rooms' ? 'active' : '' ?>" href="<?= $base_url ?>/rooms">Our Rooms</a>
                                         </li>
                                         <li class="nav-item">
+                                            <a class="nav-link <?= $current_page == 'virtual-tour' ? 'active' : '' ?>" 
+                                            href="<?= $base_url ?>/virtual-tour/1">3D Virtual Tour</a>
+                                        </li>
+                                        <li class="nav-item">
                                             <a class="nav-link <?= $current_page == 'contact' ? 'active' : '' ?>" href="<?= $base_url ?>/contact">Contact Us</a>
                                         </li>
                                         <li class="nav-item">

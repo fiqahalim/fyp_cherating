@@ -58,6 +58,13 @@ $base_url = "http://localhost:8000/FYP/fyp_cherating"; //for macbook
                               </div>
                            </div>
 
+                           <div class="col-md-12">
+                              <span>Total Guests</span>
+                              <div class="date-wrapper">
+                                 <input class="online_book" id="guests" type="number" name="guests" min="1" value="1" required>
+                              </div>
+                           </div>
+
                            <div class="col-md-12 text-center">
                               <button type="submit" class="book_btn">Book Now</button>
                            </div>

@@ -21,6 +21,16 @@ Route::get('/confirmation-done/{booking_id}', 'Home@confirmationDone');
 Route::get('/download-invoice/{booking_id}', 'Home@downloadInvoice');
 Route::post('/check-customer-availability', 'Home@checkCustomerAvailability');
 
+// Review Routes
+Route::get('/get-reviews/{room_id}', 'Home@getReviews');
+Route::post('/submit-review', 'Home@submitReview');
+
+// Payment Verification Route
+Route::get('/verify-payment/{bill_id}', 'Home@manualVerify');
+
+// Virtual Tour Route
+Route::get('/virtual-tour/{room_id}', 'Home@virtualTour');
+
 // ------------------------
 // Unified Authentication (Admin + Customer)
 // ------------------------
