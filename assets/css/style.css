@@ -874,6 +874,22 @@ button {
     100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
 }
 
+#countdown-timer {
+    font-family: 'Courier New', Courier, monospace;
+    letter-spacing: 2px;
+    font-size: 2rem;
+}
+
+.timer-pulse {
+    animation: pulse-red 1s infinite;
+}
+
+@keyframes pulse-red {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
 /** gallery  section **/
 
 .gallery {

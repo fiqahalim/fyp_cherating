@@ -9,6 +9,8 @@ class BookingModel extends Model
             $this->db->beginTransaction();
 
             $guests = $_SESSION['guests'] ?? 1;
+            $depositAmount = $total_amount * 0.35;
+            $balanceRemaining = $total_amount - $depositAmount;
 
             // Generate a unique booking reference number
             $datePart = date('Ymd');
@@ -40,8 +42,8 @@ class BookingModel extends Model
 
             $stmtPayment = $this->db->prepare("
                 INSERT INTO payments 
-                (booking_id, payment_ref_no, payment_method, amount, payment_type, remarks, verified)
-                VALUES (?, ?, ?, ?, 'full', ?, 'pending')
+                (booking_id, payment_ref_no, payment_method, amount, balance_after, payment_type, remarks, verified)
+                VALUES (?, ?, ?, ?, ?, 'deposit', ?, 'pending')
             ");
 
             // Assuming $payment_details from the controller is used as a 'remarks' field for now
@@ -49,7 +51,8 @@ class BookingModel extends Model
                 (int)$booking_id,
                 $payment_ref_no,
                 $payment_method,
-                $total_amount,
+                $depositAmount,
+                $balanceRemaining,
                 $payment_details
             ]);
 
@@ -275,7 +278,7 @@ class BookingModel extends Model
             SELECT b.check_in, b.check_out, br.rooms_booked 
             FROM bookings b
             JOIN booking_rooms br ON b.id = br.booking_id
-            WHERE b.status = 'confirmed' 
+            WHERE (b.status = 'confirmed' OR (b.status = 'pending' AND b.expires_at > NOW()))
             AND b.check_out >= CURDATE()
         ");
         $stmt->execute();
@@ -457,5 +460,37 @@ class BookingModel extends Model
         $stmt->execute([$booking_id]);
 
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // Locked Room
+    public function holdRooms($rooms, $expiresAt)
+    {
+        $stmt = $this->db->prepare("DELETE FROM room_locks WHERE session_id = ?");
+        $stmt->execute([session_id()]);
+
+        foreach ($rooms as $roomId => $quantity) {
+            $sql = "INSERT INTO room_locks (room_id, quantity, expires_at, session_id) 
+                    VALUES (?, ?, ?, ?)";
+            $stmtInsert = $this->db->prepare($sql);
+            $stmtInsert->execute([
+                $roomId, 
+                $quantity, 
+                date('Y-m-d H:i:s', $expiresAt), 
+                session_id()
+            ]);
+        }
+    }
+
+    /**
+     * Release locks held by a specific session.
+     * Usually called after a successful booking or an expired session.
+     */
+    public function releaseLocks($sessionId)
+    {
+        $stmt = $this->db->prepare("DELETE FROM room_locks WHERE session_id = ?");
+        $stmt->execute([$sessionId]);
+
+        $stmt2 = $this->db->prepare("DELETE FROM room_locks WHERE expires_at < NOW()");
+        $stmt2->execute();
     }
 }

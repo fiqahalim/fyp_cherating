@@ -70,6 +70,12 @@ Route::group('/admin', function () {
     Route::get('/bookings/{id}/delete', 'Booking@delete');
 
     // Payments
+    Route::get('/payments', 'Payment@index');
+    Route::match(['GET', 'POST'], '/payments/create', 'Payment@createOrUpdate');
+
+    // 360 Room Tour
+    Route::get('/room-tours', 'RoomTour@index');
+    Route::match(['GET', 'POST'], '/room-tours/create', 'RoomTour@createOrUpdate');
 
     // Messages
     Route::get('/messages', 'Message@index');

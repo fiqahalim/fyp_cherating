@@ -20,9 +20,6 @@ $total_amount = $_SESSION['total_amount'] ?? 0.0;
 $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
 ?>
 
-<!-- ============================================================ -->
-<!-- Hidden input field for JavaScript to check the flag set by the controller -->
-<!-- ============================================================ -->
 <input type="hidden" id="show_new_customer_fields_flag" value="<?= $show_fields_flag ? '1' : '0' ?>">
 
 <div class="container my-5">
@@ -144,10 +141,7 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
                     <div id="qr_payment_details" class="payment-method-fields" style="display:none;">
                         <p>Scan the QR code below to complete your deposit payment:</p>
                         <div id="qr_code_container" class="mt-3">
-                            <?php
-                                $displayQrLink = $qrUrl ?? $_SESSION['qr_url_raw'] ?? ''; 
-                            ?>
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=<?= urlencode($displayQrLink) ?>" 
+                            <img src="<?= $base_url ?>/assets/images/QR_Merchant.jpeg"
                                 alt="Payment QR Code" 
                                 style="border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
                         </div>
@@ -176,6 +170,15 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
 
         <!-- RIGHT SIDEBAR -->
         <div class="col-lg-4">
+            <!-- BOOKING TIMER -->
+             <div class="sidebar-card p-3 mb-4 border-danger border">
+                <h5 class="text-danger fw-bold mb-2"><i class="fas fa-clock me-2"></i> Booking Session</h5>
+                <p class="small mb-2">Please complete your payment within:</p>
+                <div id="countdown-timer" class="display-6 fw-bold text-center text-danger">
+                    <span class="time-text">--:--</span>
+                </div>
+                <p class="text-muted small mt-2 mb-0">Rooms are held temporarily and will be released if the timer expires.</p>
+            </div>
             <!-- BOOKING SUMMARY CARD -->
             <div class="sidebar-card p-3 mb-4">
                 <h4 class="mb-3 fw-bold">Booking Summary</h4>
@@ -204,14 +207,12 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
                     <?php endforeach; ?>
                 </ul>
             </div>
-
             <!-- PRICE SUMMARY CARD -->
             <div class="sidebar-card-price p-3">
                 <h4 class="fw-bold mb-3">Your Price Summary</h4>
 
                 <?php 
-                $total_rooms_booked = 0; 
-                // We use the $totalAmount calculated by the controller logic
+                    $total_rooms_booked = 0;
                 ?>
 
                 <?php foreach ($rooms as $room): ?>
@@ -261,7 +262,6 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
                 </p>
                 <p class="text-muted small mb-0">* Surcharges for weekends/holidays are included in the average rate.</p>
             </div>
-
             <!-- Review Rules -->
             <div class="sidebar-card p-3 mb-4 mt-4">
                 <h4 class="mb-3 fw-bold">Review house rules</h4>
@@ -285,10 +285,13 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // 1. Define all elements first (Add checks to prevent null errors)
-    const paymentMethodSelect = document.getElementById('payment_method'); // Make sure your <select> has id="payment_method"
+    const paymentMethodSelect = document.getElementById('payment_method');
     const qrDetails = document.getElementById('qr_payment_details');
     const fpxDetails = document.getElementById('fpx_payment_details');
     const receiptInput = document.getElementById('receipt');
+
+    let timeLeft = <?= $_SESSION['booking_expires_at'] - time() ?>;
+    const timerDisplay = document.getElementById('countdown-timer');
     
     const newCustomerFields = document.getElementById('new_customer_fields');
     const usernameInput = document.getElementById('guest_username');
@@ -314,7 +317,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const fpxDetails = document.getElementById('fpx_payment_details');
         const receiptInput = document.getElementById('receipt');
         
-        // Use Optional Chaining or check existence to prevent "null" errors
         if (selectedMethod === 'qr') {
             qrDetails.style.display = 'block';
             fpxDetails.style.display = 'none';
@@ -330,8 +332,36 @@ document.addEventListener('DOMContentLoaded', function() {
     // 4. Attach Event Listener safely
     if (paymentMethodSelect) {
         paymentMethodSelect.addEventListener('change', updatePaymentFields);
-        // Run once on page load to set initial state
         updatePaymentFields();
     }
+
+    // Booking timer
+    function updateTimer() {
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            timerDisplay.innerHTML = "EXPIRED";
+            
+            // Alert the user and redirect
+            alert("Your booking session has expired. You will be redirected to the room selection page.");
+            window.location.href = "<?= APP_URL ?>/rooms";
+            return;
+        }
+
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+
+        // Format as MM:SS (e.g., 09:05)
+        timerDisplay.innerHTML = 
+            (minutes < 3 ? '0' : '') + minutes + ":" + 
+            (seconds < 3 ? '0' : '') + seconds;
+
+        // Add a pulsing effect when less than 1 minute remains
+        if (timeLeft < 60) {
+            timerDisplay.classList.add('timer-pulse');
+        }
+        timeLeft--;
+    }
+    const timerInterval = setInterval(updateTimer, 1000);
+    updateTimer();
 });
 </script>

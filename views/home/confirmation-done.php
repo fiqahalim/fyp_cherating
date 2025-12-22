@@ -11,13 +11,22 @@
         <p class="lead">Thank you, <strong><?= htmlspecialchars($booking['full_name']) ?></strong>! Your booking has been successfully confirmed.</p>
     </div>
 
-    <?php if (isset($payment) && $payment['payment_method'] === 'fpx' && $payment['verified'] === 'pending'): ?>
+    <?php 
+        $isFPX = (strtolower($booking['payment_method']) === 'fpx');
+        $isPending = (!isset($payment['verified']) || $payment['verified'] === 'pending');
+        
+        if ($isFPX && $isPending):
+    ?>
         <div class="alert alert-warning border-warning shadow-sm mt-4 text-center">
             <h5 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Localhost Payment Sync</h5>
             <p>If you have already completed your payment but the status below still says <strong>PENDING</strong>, please click the button below:</p>
-            <a href="<?= APP_URL ?>/verify-payment/<?= $payment['billplz_id'] ?>" class="btn btn-warning fw-bold">
-                <i class="fas fa-sync-alt"></i> VERIFY MY PAYMENT NOW
-            </a>
+            <?php if (!empty($payment['billplz_id'])): ?>
+                <a href="<?= APP_URL ?>/verify-payment/<?= $payment['billplz_id'] ?>" class="btn btn-warning fw-bold">
+                    <i class="fas fa-sync-alt"></i> VERIFY MY PAYMENT NOW
+                </a>
+            <?php else: ?>
+                <p class="text-danger small">Error: Bill ID not found. Please contact support.</p>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 
@@ -105,8 +114,15 @@
                 
                 <div class="py-1">
                     <strong class="d-block text-muted">Payment Method:</strong>
-                    <span class="text-white">Method: <?= strtoupper($booking['payment_method']) ?></span> | 
-                    <span class="text-info fw-bold">Status: <?= strtoupper($payment['verified'] ?? $booking['payment_status']) ?></span>
+                    <span class="text-white">Method: <?= strtoupper($booking['payment_method']) ?></span>
+                </div>
+                <div class="py-1">
+                    <strong class="d-block text-muted">Verification Status:</strong>
+                    <?php 
+                        $status = strtoupper($payment['verified'] ?? 'PENDING');
+                        $badgeClass = ($status === 'APPROVED') ? 'text-success' : 'text-warning';
+                    ?>
+                    <span class="<?= $badgeClass ?> fw-bold"><?= $status ?></span>
                 </div>
                 <div class="py-1">
                     <strong class="d-block text-muted">Booking Status:</strong>

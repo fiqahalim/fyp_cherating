@@ -65,15 +65,25 @@ class RoomModel
 
         // Count overlapping confirmed bookings for this room type
         $stmt = $this->db->prepare("
-            SELECT COUNT(*) FROM bookings 
-            WHERE room_id = ? 
-            AND status = 'confirmed'
-            AND NOT (check_out <= ? OR check_in >= ?)
+            SELECT SUM(br.rooms_booked) FROM booking_rooms br
+            JOIN bookings b ON br.booking_id = b.id
+            WHERE br.room_id = ? 
+            AND b.status != 'cancelled'
+            AND NOT (b.check_out <= ? OR b.check_in >= ?)
         ");
         $stmt->execute([$room_id, $arrival, $departure]);
         $booked = (int)$stmt->fetchColumn();
 
-        return max(0, $totalRooms - $booked);
+        $stmt = $this->db->prepare("
+            SELECT SUM(quantity) FROM room_locks 
+            WHERE room_id = ? 
+            AND expires_at > NOW()
+            AND session_id != ?
+        ");
+        $stmt->execute([$room_id, session_id()]);
+        $lockedByOthers = (int)$stmt->fetchColumn();
+
+        return max(0, $totalRooms - $booked - $lockedByOthers);
     }
 
     // Get rooms with their availability counts
@@ -83,14 +93,12 @@ class RoomModel
         // If guests < 4, show all active rooms.
         $minCapacity = ($guests >= 4) ? 2 : 1;
 
-        // Fetch all active rooms
         $stmt = $this->db->prepare("SELECT * FROM rooms WHERE status = 'active' AND capacity >= :min_cap");
         $stmt->execute([':min_cap' => $minCapacity]);
         $rooms = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // For each room, calculate available rooms
         foreach ($rooms as &$room) {
-            // Fetch the total number of rooms booked during the given dates
             $stmt = $this->db->prepare(
                 "SELECT SUM(br.rooms_booked) AS booked_quantity 
                 FROM booking_rooms br
@@ -105,12 +113,23 @@ class RoomModel
                 ':arrival' => $arrival,
                 ':departure' => $departure
             ]);
-
-            // Fetch booked quantity
             $booked = $stmt->fetch(PDO::FETCH_ASSOC)['booked_quantity'] ?? 0;
 
+            $stmtLocked = $this->db->prepare(
+                "SELECT SUM(quantity) AS locked_quantity 
+                FROM room_locks 
+                WHERE room_id = :room_id 
+                AND expires_at > NOW()
+                AND session_id != :sess_id"
+            );
+            $stmtLocked->execute([
+                ':room_id' => $room['id'],
+                ':sess_id' => session_id()
+            ]);
+            $lockedByOthers = $stmtLocked->fetch(PDO::FETCH_ASSOC)['locked_quantity'] ?? 0;
+
             // Calculate available rooms (total rooms - booked rooms)
-            $room['available'] = max(0, $room['total_rooms'] - $booked);
+            $room['available'] = max(0, $room['total_rooms'] - $booked - $lockedByOthers);
         }
 
         return $rooms;
@@ -205,10 +224,12 @@ class RoomModel
     // Fetch adjustments where the holiday period overlaps with booking dates
     public function getPriceAdjustments($arrival, $departure)
     {
-        $sql = "SELECT * FROM price_adjustments 
-                WHERE (start_date <= :departure AND end_date >= :arrival)";
+        $lastNight = date('Y-m-d', strtotime($departure . ' -1 day'));
+
+        $sql = "SELECT * FROM price_adjustments
+                WHERE (start_date <= :lastNight AND end_date >= :arrival)";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute(['arrival' => $arrival, 'departure' => $departure]);
+        $stmt->execute(['arrival' => $arrival, 'lastNight' => $lastNight]);
         
         return $stmt->fetchAll();
     }

@@ -25,6 +25,9 @@ if (str_starts_with($current_page, $base_path)) {
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <?php if (isset($remaining_seconds) && $remaining_seconds > 0): ?>
+        <meta http-equiv="refresh" content="<?= $remaining_seconds; ?>">
+    <?php endif; ?>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="viewport" content="initial-scale=1, maximum-scale=1">
     <title>Cherating - Guest House</title>
@@ -45,7 +48,6 @@ if (str_starts_with($current_page, $base_path)) {
     <div class="loader_bg">
         <div class="loader"><img src="<?= $base_url ?>/assets/images/loading.gif" alt="#"/></div>
     </div>
-    
     <?php if (!$isAdmin): // hide this header for admin, since admin has its own layout ?>
     <header>
         <div class="header">
@@ -90,8 +92,9 @@ if (str_starts_with($current_page, $base_path)) {
                                             <a class="nav-link <?= $current_page == 'rooms' ? 'active' : '' ?>" href="<?= $base_url ?>/rooms">Our Rooms</a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="nav-link <?= $current_page == 'virtual-tour' ? 'active' : '' ?>" 
-                                            href="<?= $base_url ?>/virtual-tour/1">3D Virtual Tour</a>
+                                            <a class="nav-link <?= strpos($current_page, 'virtual-tour') === 0 ? 'active' : '' ?>" href="<?= $base_url ?>/virtual-tour/1">
+                                                360° Virtual Tour
+                                            </a>
                                         </li>
                                         <li class="nav-item">
                                             <a class="nav-link <?= $current_page == 'contact' ? 'active' : '' ?>" href="<?= $base_url ?>/contact">Contact Us</a>

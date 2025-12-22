@@ -276,7 +276,7 @@ class HomeController extends Controller
         $depositAmount = $totalAmount * 0.35;
 
         // Generate the QR URL with the dynamically calculated total
-        $merchantId = 'YOUR_MERCHANT_ID';
+        $merchantId = '110329060755';
         $rawPaymentLink = "https://www.tngdigital.com.my/pay?amount=" . number_format($totalAmount, 2, '.', '') . "&merchant_id=" . $merchantId;
 
         // 6. Save selected rooms and booking details to session
@@ -290,6 +290,24 @@ class HomeController extends Controller
         $_SESSION['total_nights'] = $totalNights;
         $_SESSION['qr_url_raw'] = $rawPaymentLink;
 
+        // Booking Timer
+        if (isset($_SESSION['booking_expires_at']) && time() > $_SESSION['booking_expires_at']) {
+            $this->bookingModel->releaseLocks(session_id());
+            $this->clearBookingSession();
+            Flash::set('error', 'Your booking session has expired. Please start over.');
+            header('Location: ' . APP_URL . '/rooms');
+            exit;
+        }
+
+        if (!isset($_SESSION['booking_expires_at'])) {
+            $minutes = 3;
+            $_SESSION['booking_expires_at'] = time() + ($minutes * 60);
+
+            $this->bookingModel->holdRooms($selectedRooms, $_SESSION['booking_expires_at']);
+        }
+
+        $remainingSeconds = $_SESSION['booking_expires_at'] - time();
+
         // 7. Render View
         $this->view('home/booking-confirmation', [
             'arrival' => $arrival,
@@ -300,6 +318,8 @@ class HomeController extends Controller
             'depositAmount' => $depositAmount,
             'totalNights' => $totalNights,
             'qrUrl' => $rawPaymentLink,
+            'expires_at' => $_SESSION['booking_expires_at'],
+            'remaining_seconds' => $remainingSeconds,
         ]);
     }
 
@@ -313,6 +333,13 @@ class HomeController extends Controller
             header('Location: ' . APP_URL);
             exit;
         }
+        if (!isset($_SESSION['booking_expires_at']) || time() > $_SESSION['booking_expires_at']) {
+            $this->bookingModel->releaseLocks(session_id());
+            $this->clearBookingSession();
+            Flash::set('error', 'Your booking session has expired. Please re-select your rooms.');
+            header('Location: ' . APP_URL . '/rooms');
+            exit;
+        }
 
         // 1. Retrieve Data
         $name = $_POST['name'] ?? '';
@@ -322,7 +349,7 @@ class HomeController extends Controller
         $password = $_POST['password'] ?? null;
         $check_in = $_POST['check_in'] ?? '';
         $check_out = $_POST['check_out'] ?? '';
-        $rooms = $_POST['rooms'] ?? []; // room_id => quantity
+        $rooms = $_POST['rooms'] ?? [];
         $payment_method = $_POST['payment_method'] ?? '';
         $payment_details = $_POST['payment_details'] ?? '';
         $totalAmount = $_POST['total_amount'] ?? 0.0;
@@ -387,6 +414,12 @@ class HomeController extends Controller
 
     private function handleFinalBooking($customerId, $postData, $fileData = null)
     {
+        if (time() > ($_SESSION['booking_expires_at'] ?? 0)) {
+            Flash::set('error', 'Session timed out during account creation. Please try again.');
+            header('Location: ' . APP_URL . '/rooms');
+            exit;
+        }
+
         // 1. Retrieve essential details
         $check_in = $postData['check_in']; 
         $check_out = $postData['check_out'];
@@ -399,6 +432,7 @@ class HomeController extends Controller
 
         // Calculate 35% Deposit
         $depositAmount = $totalAmount * 0.35;
+        $balanceRemaining = $totalAmount - $depositAmount;
 
         // 2. Handle QR receipt Upload Only
         if ($payment_method === 'qr') {
@@ -455,12 +489,14 @@ class HomeController extends Controller
                     'payment_ref_no'  => $bill['id'],
                     'payment_method'  => 'fpx',
                     'amount'          => $depositAmount,
+                    'balance_after'   => $balanceRemaining,
                     'payment_type'    => 'deposit',
                     'receipt_image'   => null,
                     'verified'        => 'pending'
                 ]);
                 
-                // $this->clearBookingSession();
+                $this->bookingModel->releaseLocks(session_id());
+                $this->clearBookingSession();
                 header('Location: ' . $bill['url']);
                 exit;
             } else {
@@ -475,12 +511,14 @@ class HomeController extends Controller
                 'payment_ref_no'  => 'PAY-' . strtoupper(uniqid()),
                 'payment_method'  => $payment_method,
                 'amount'          => $depositAmount,
+                'balance_after'   => $balanceRemaining,
                 'payment_type'    => 'deposit',
                 'receipt_image'   => $targetPath,
                 'verified'        => 'pending'
             ]);
 
-            // $this->clearBookingSession();
+            $this->bookingModel->releaseLocks(session_id());
+            $this->clearBookingSession();
             header('Location: ' . APP_URL . '/confirmation-done/' . $booking_id);
             exit;
         }
@@ -671,8 +709,6 @@ class HomeController extends Controller
         // WhatsApp API simulation
         if ($saved) {
             $wa_url = WhatsappHelper::generateWhatsAppLink($name, $email, $phone, $message);
-
-            // Save it in session to redirect from front-end
             $_SESSION['whatsapp_url'] = $wa_url;
             $_SESSION['success'] = 'Your message has been sent successfully!';
         } else {
@@ -695,16 +731,12 @@ class HomeController extends Controller
         $totalNights = $_SESSION['total_nights'] ?? 0;
         $totalAmount = $_SESSION['total_amount'] ?? 0.0;
         
-        // Retrieve room data. We need to fetch room details again, 
-        // but use the quantities stored in $_SESSION['selected_rooms'].
         $selectedRooms = $_SESSION['selected_rooms'] ?? [];
         $rooms = [];
         
         if (!empty($selectedRooms)) {
-            // Fetch room details from the database
             $rooms = $this->roomModel->getRoomsByIds(array_keys($selectedRooms));
 
-            // Attach the quantity to each room for the view, just like in bookingConfirmation()
             foreach ($rooms as &$room) {
                 $roomId = (int)$room['id'];
                 $room['quantity'] = (int)($selectedRooms[$roomId] ?? 0);
@@ -861,15 +893,21 @@ class HomeController extends Controller
 
     public function manualVerify($bill_id)
     {
-        $isPaid = $this->bookingModel->verifyBillplzPayment($bill_id);
-
         $payment = $this->bookingModel->getPaymentByBillplzId($bill_id);
+
+        if (!$payment) {
+            Flash::set('error', 'Payment record not found.');
+            header('Location: ' . APP_URL);
+            exit;
+        }
+
+        $isPaid = $this->bookingModel->verifyBillplzPayment($bill_id);
         
         if ($isPaid) {
             $this->bookingModel->updateBookingStatus($payment['booking_id'], 'partial', 'confirmed');
             Flash::set('success', 'Payment verified successfully!');
         } else {
-            Flash::set('error', 'Payment not detected yet. If you have paid, please wait a moment or contact support.');
+            Flash::set('error', 'Payment not detected yet. If you have paid, please wait a moment.');
         }
         
         header('Location: ' . APP_URL . '/confirmation-done/' . $payment['booking_id']);
@@ -893,5 +931,30 @@ class HomeController extends Controller
             'hotspots' => $hotspots,
             'roomId'   => $roomId,
         ]);
+    }
+
+    // Cleanup all session
+    private function clearBookingSession()
+    {
+        $vars = [
+            'selected_rooms', 
+            'rooms_data', 
+            'check_in', 
+            'check_out', 
+            'guests', 
+            'total_amount', 
+            'deposit_amount', 
+            'total_nights', 
+            'qr_url_raw', 
+            'booking_expires_at', 
+            'pending_booking_data',
+            'show_new_customer_fields'
+        ];
+        
+        foreach ($vars as $var) {
+            if (isset($_SESSION[$var])) {
+                unset($_SESSION[$var]);
+            }
+        }
     }
 }

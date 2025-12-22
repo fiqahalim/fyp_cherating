@@ -58,13 +58,28 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link" href="<?= $base_url ?>/admin/payments">
+                    <i class="fas fa-money"></i><span>PAYMENTS</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" href="<?= $base_url ?>/admin/rooms">
                     <i class="fas fa-hotel"></i><span>ROOMS</span>
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link" href="<?= $base_url ?>/admin/room-tours">
+                    <i class="fas fa-glass"></i><span>360° VIRTUAL TOUR</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" href="<?= $base_url ?>/admin/messages">
                     <i class="fas fa-comment"></i><span>MESSAGES</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="<?= $base_url ?>/admin/chatbots">
+                    <i class="fas fa-robot"></i><span>AI CHATBOT</span>
                 </a>
             </li>
             <hr class="sidebar-divider d-none d-md-block">
