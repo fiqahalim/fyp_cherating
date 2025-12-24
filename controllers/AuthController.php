@@ -219,27 +219,45 @@ class AuthController extends Controller
 
         // Handle Admin Dashboard
         if ($type === 'admin') {
-
             $selectedYear = $_GET['year'] ?? date('Y');
             $data['selectedYear'] = $selectedYear;
             $data['availableYears'] = $this->bookingModel->getBookingYears();
 
-            // Fetch data using model methods
+            // Summary Cards
             $data['totalBookings'] = $this->bookingModel->getTotalBookings();
-            $data['totalRooms'] = $this->roomModel->getTotalRooms();
+            $data['totalRooms'] = $this->roomModel->getTotalRooms(); // Total types
             $data['totalRevenue'] = $this->bookingModel->getTotalRevenue();
             $data['totalMessages'] = $this->contactModel->getTotalMessages();
+            
+            // Physical capacity for occupancy percentage
+            $totalCapacity = $this->roomModel->getTotalPhysicalCapacity();
+            $data['totalCapacity'] = $totalCapacity;
 
-            // 1. Chart Data: Monthly Revenue
-            $monthlyRaw = $this->bookingModel->getMonthlyRevenue(date('Y'));
+            // Analytics
+            $data['popularRooms'] = $this->bookingModel->getPopularRooms();
+            $forecastRaw = $this->bookingModel->getOccupancyForecast();
+            $data['forecastLabels'] = array_column($forecastRaw, 'date');
+            $data['forecastValues'] = array_column($forecastRaw, 'occupied_count');
+
+            // Revenue Chart Data
+            $monthlyRaw = $this->bookingModel->getMonthlyRevenue($selectedYear);
             $chartData = array_fill(1, 12, 0);
-
             foreach ($monthlyRaw as $row) {
                 $chartData[(int)$row['month']] = (float)$row['total'];
             }
-
             $data['revenueChartValues'] = array_values($chartData);
-            $data['unpaidBookings'] = $this->bookingModel->getUnpaidBookings(5);
+
+            // Low Occupancy Logic
+            $data['lowOccupancyAlert'] = false;
+            foreach ($data['forecastValues'] as $occupied) {
+                $rate = ($totalCapacity > 0) ? ($occupied / $totalCapacity) * 100 : 0;
+                if ($rate < 20) {
+                    $data['lowOccupancyAlert'] = true;
+                    break;
+                }
+            }
+
+            $data['unpaidBookings'] = $this->bookingModel->getUnpaidBookingsWithPaymentStatus(5);
             $data['recentMessages'] = $this->contactModel->getAllMessages();
 
             $this->view('admin/dashboard', $data);

@@ -27,6 +27,84 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
     <link
     href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+
+    <script>
+        let lastNotificationCount = 0;
+
+        function checkNotifications() {
+            fetch('<?= $base_url ?>/admin/getGlobalNotifications')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('notification-items-container');
+                    const counter = document.getElementById('global-nav-count');
+                    const sound = document.getElementById('notification-sound');
+
+                    // 1. Play sound if count increased
+                    if (data.total > lastNotificationCount) {
+                        sound.play().catch(e => console.log("Sound blocked by browser until user interacts with page."));
+                    }
+                    lastNotificationCount = data.total;
+
+                    // 2. Update Badge
+                    counter.innerText = data.total > 0 ? data.total : '';
+
+                    // 3. Build HTML
+                    let html = '';
+
+                    // Add Pending QR
+                    data.pending_qr.forEach(item => {
+                        html += `
+                        <a class="dropdown-item d-flex align-items-center" href="<?= $base_url ?>/admin/bookings/view_payment">
+                            <div class="mr-3">
+                                <div class="icon-circle bg-warning"><i class="fas fa-qrcode text-white"></i></div>
+                            </div>
+                            <div>
+                                <div class="small text-gray-500">QR Payment Pending</div>
+                                <span class="font-weight-bold">Verify receipt for Ref: ${item.booking_ref_no}</span>
+                            </div>
+                        </a>`;
+                    });
+
+                    // Add New Bookings
+                    data.new_bookings.forEach(item => {
+                        html += `
+                        <a class="dropdown-item d-flex align-items-center" href="<?= $base_url ?>/admin/bookings">
+                            <div class="mr-3">
+                                <div class="icon-circle bg-primary"><i class="fas fa-calendar-plus text-white"></i></div>
+                            </div>
+                            <div>
+                                <div class="small text-gray-500">New Booking</div>
+                                New reservation made: ${item.booking_ref_no}
+                            </div>
+                        </a>`;
+                    });
+
+                    // Add Cancellations
+                    data.cancellations.forEach(item => {
+                        html += `
+                        <a class="dropdown-item d-flex align-items-center" href="<?= $base_url ?>/admin/bookings">
+                            <div class="mr-3">
+                                <div class="icon-circle bg-danger"><i class="fas fa-user-times text-white"></i></div>
+                            </div>
+                            <div>
+                                <div class="small text-gray-500">Cancellation</div>
+                                ${item.booking_ref_no} was cancelled (>5 days notice).
+                            </div>
+                        </a>`;
+                    });
+
+                    if(data.total === 0) {
+                        html = '<a class="dropdown-item text-center small text-gray-500" href="#">No new alerts</a>';
+                    }
+
+                    container.innerHTML = html;
+                });
+        }
+
+        // Check every 15 seconds
+        setInterval(checkNotifications, 15000);
+        document.addEventListener('DOMContentLoaded', checkNotifications);
+    </script>
 </head>
 <body id="page-top">
     <!-- Page Wrapper -->
@@ -47,7 +125,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <li class="nav-item active">
                 <a class="nav-link" href="<?= $base_url ?>/dashboard">
                     <i class="fas fa-fw fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
+                    <span>DASHBOARD</span>
                 </a>
             </li>
             <hr class="sidebar-divider">
@@ -69,17 +147,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="<?= $base_url ?>/admin/room-tours">
-                    <i class="fas fa-glass"></i><span>360° VIRTUAL TOUR</span>
+                    <i class="fas fa-magnifying-glass"></i><span>360° VIRTUAL TOUR</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="<?= $base_url ?>/admin/messages">
                     <i class="fas fa-comment"></i><span>MESSAGES</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="<?= $base_url ?>/admin/chatbots">
-                    <i class="fas fa-robot"></i><span>AI CHATBOT</span>
                 </a>
             </li>
             <hr class="sidebar-divider d-none d-md-block">
@@ -113,51 +186,24 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <i class="fas fa-bell fa-fw"></i>
-                                <!-- Counter - Alerts -->
-                                <span class="badge badge-danger badge-counter">3+</span>
+                                <span class="badge badge-danger badge-counter" id="global-nav-count">0</span>
                             </a>
-                            <!-- Dropdown - Alerts -->
+                            
                             <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in"
                                 aria-labelledby="alertsDropdown">
-                                <h6 class="dropdown-header">
-                                    Alerts Center
-                                </h6>
-                                <a class="dropdown-item d-flex align-items-center" href="#">
-                                    <div class="mr-3">
-                                        <div class="icon-circle bg-primary">
-                                            <i class="fas fa-file-alt text-white"></i>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="small text-gray-500">December 12, 2019</div>
-                                        <span class="font-weight-bold">A new monthly report is ready to download!</span>
-                                    </div>
-                                </a>
-                                <a class="dropdown-item d-flex align-items-center" href="#">
-                                    <div class="mr-3">
-                                        <div class="icon-circle bg-success">
-                                            <i class="fas fa-donate text-white"></i>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="small text-gray-500">December 7, 2019</div>
-                                        $290.29 has been deposited into your account!
-                                    </div>
-                                </a>
-                                <a class="dropdown-item d-flex align-items-center" href="#">
-                                    <div class="mr-3">
-                                        <div class="icon-circle bg-warning">
-                                            <i class="fas fa-exclamation-triangle text-white"></i>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="small text-gray-500">December 2, 2019</div>
-                                        Spending Alert: We've noticed unusually high spending for your account.
-                                    </div>
-                                </a>
-                                <a class="dropdown-item text-center small text-gray-500" href="#">Show All Alerts</a>
+                                <h6 class="dropdown-header">Alerts Center</h6>
+                                
+                                <div id="notification-items-container">
+                                    <a class="dropdown-item text-center small text-gray-500" href="#">No new alerts</a>
+                                </div>
+                                
+                                <a class="dropdown-item text-center small text-gray-500" href="<?= $base_url ?>/admin/bookings">View All Bookings</a>
                             </div>
                         </li>
+
+                        <audio id="notification-sound" preload="auto">
+                            <source src="<?= $base_url ?>/assets/audio/ding.mp3" type="audio/mpeg">
+                        </audio>
 
                         <!-- Nav Item - Messages -->
                         <li class="nav-item dropdown no-arrow mx-1">

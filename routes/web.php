@@ -74,6 +74,9 @@ Route::group('/admin', function () {
     // Payments
     Route::get('/payments', 'Payment@index');
     Route::match(['GET', 'POST'], '/payments/create', 'Payment@createOrUpdate');
+    Route::match(['GET', 'POST'], '/payments/verify/{id}', 'Payment@verifyPayment');
+    Route::post('/payments/update_status', 'Payment@updateStatus');
+    Route::match(['GET', 'POST'], '/payments/view_payment', 'Payment@view_payment');
 
     // 360 Room Tour
     Route::get('/room-tours', 'RoomTour@index');
@@ -82,4 +85,10 @@ Route::group('/admin', function () {
     // Messages
     Route::get('/messages', 'Message@index');
     Route::get('/messages/view/{id}', 'Message@viewMessage');
+
+    // Dashboard Analytics
+    Route::match(['GET', 'POST'], '/getUnpaidBookingsJson', 'Admin@getUnpaidBookingsJson');
+
+    // Global Notification
+    Route::match(['GET', 'POST'], '/getGlobalNotifications', 'Admin@getGlobalNotifications');
 });

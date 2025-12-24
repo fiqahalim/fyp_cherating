@@ -84,4 +84,20 @@ class PaymentModel extends Model
         
         return $stmt->execute([$bookingId, $paymentRef, $amount, $imagePath]);
     }
+
+    public function updateVerificationStatus($paymentId, $status, $reason = '')
+    {
+        $sql = "UPDATE payments SET verified = ?, rejection_reason = ? WHERE id = ?";
+
+        return $this->db->prepare($sql)->execute([$status, $reason, $paymentId]);
+    }
+
+    public function getPaymentById($id)
+    {
+        $sql = "SELECT * FROM payments WHERE id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$id]);
+
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 }

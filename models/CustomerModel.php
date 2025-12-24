@@ -139,9 +139,7 @@ class CustomerModel
 
         return $stmt->execute();
     }
-
     
-
     /**
      * ONLY updates the password for a customer.
     */

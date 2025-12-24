@@ -519,4 +519,57 @@ class BookingModel extends Model
         $stmt2 = $this->db->prepare("DELETE FROM room_locks WHERE expires_at < NOW()");
         $stmt2->execute();
     }
+
+    public function getPopularRooms()
+    {
+        $sql = "SELECT r.name, COUNT(br.id) as total_bookings 
+                FROM rooms r
+                JOIN booking_rooms br ON r.id = br.room_id
+                JOIN bookings b ON br.booking_id = b.id
+                WHERE b.status != 'cancelled'
+                GROUP BY r.id 
+                ORDER BY total_bookings DESC 
+                LIMIT 5";
+
+        return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getOccupancyForecast()
+    {
+        $sql = "SELECT d.date, COALESCE(SUM(br.rooms_booked), 0) as occupied_count
+                FROM (
+                    SELECT CURDATE() as date UNION SELECT DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+                    UNION SELECT DATE_ADD(CURDATE(), INTERVAL 2 DAY) UNION SELECT DATE_ADD(CURDATE(), INTERVAL 3 DAY)
+                    UNION SELECT DATE_ADD(CURDATE(), INTERVAL 4 DAY) UNION SELECT DATE_ADD(CURDATE(), INTERVAL 5 DAY)
+                    UNION SELECT DATE_ADD(CURDATE(), INTERVAL 6 DAY)
+                ) d
+                LEFT JOIN bookings b ON d.date >= b.check_in AND d.date < b.check_out AND b.status = 'confirmed'
+                LEFT JOIN booking_rooms br ON b.id = br.booking_id
+                GROUP BY d.date";
+                
+        return $this->db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getUnpaidBookingsWithPaymentStatus($limit = 10)
+    {
+        $sql = "SELECT 
+                b.*, 
+                c.full_name, 
+                p.verified as payment_verify_status, 
+                p.payment_method 
+                FROM bookings b
+                LEFT JOIN customers c ON b.customer_id = c.id 
+                LEFT JOIN payments p ON b.id = p.booking_id 
+                WHERE b.payment_status != 'paid' 
+                AND b.status != 'cancelled'
+                AND (p.verified IS NULL OR p.verified = 'pending')
+                ORDER BY b.created_at DESC 
+                LIMIT :limit";
+                
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

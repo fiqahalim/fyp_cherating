@@ -233,4 +233,21 @@ class RoomModel
         
         return $stmt->fetchAll();
     }
+
+    // Get the total number of physical rooms we own
+    public function getTotalRoomCapacity()
+    {
+        $sql = "SELECT SUM(total_rooms) as capacity FROM rooms WHERE status = 'active'";
+        $stmt = $this->db->query($sql);
+
+        return $stmt->fetchColumn() ?: 0;
+    }
+
+    public function getTotalPhysicalCapacity()
+    {
+        $stmt = $this->db->prepare("SELECT SUM(total_rooms) FROM rooms WHERE status = 'active'");
+        $stmt->execute();
+
+        return (int)$stmt->fetchColumn() ?: 0;
+    }
 }
