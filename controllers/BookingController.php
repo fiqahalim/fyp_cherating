@@ -10,6 +10,7 @@ class BookingController extends Controller
     {
         // Initialize the model (only once)
         $this->bookingModel = $this->model('BookingModel');
+        $this->paymentModel = $this->model('PaymentModel');
     }
 
     public function index()
@@ -47,13 +48,11 @@ class BookingController extends Controller
         $booking = $this->bookingModel->getBookingById($id);
 
         if (!$booking) {
-            // If no booking found, redirect with an error message
             Flash::set('error', 'Booking not found');
             header('Location: ' . APP_URL . '/admin/bookings');
             exit;
         }
 
-        // Pass the booking data to the view
         $this->view('admin/bookings/view', ['booking' => $booking]);
     }
 

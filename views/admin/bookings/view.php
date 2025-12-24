@@ -111,13 +111,21 @@
                             <table class="table table-sm table-borderless">
                                 <tr>
                                     <td>Method:</td>
-                                    <td><strong><?= ucfirst(htmlspecialchars($booking['payment_method'])) ?></strong></td>
+                                    <td><strong><?= strtoupper(htmlspecialchars($booking['payment_method'])) ?></strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Deposit:</td>
+                                    <td><strong>RM <?= number_format($booking['deposit_paid'], 2) ?></strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Balance Remaining:</td>
+                                    <td><strong>RM <?= number_format($booking['balance_after'], 2) ?></strong></td>
                                 </tr>
                                 <tr>
                                     <td>Status:</td>
                                     <td>
                                         <span class="text-<?= $booking['payment_status'] === 'paid' ? 'success' : 'danger' ?>">
-                                            ● <?= ucfirst(htmlspecialchars($booking['payment_status'])) ?>
+                                            ● <?= strtoupper(htmlspecialchars($booking['payment_status'])) ?>
                                         </span>
                                     </td>
                                 </tr>

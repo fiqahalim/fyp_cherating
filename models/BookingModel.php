@@ -112,6 +112,7 @@ class BookingModel extends Model
                 p.payment_ref_no,
                 p.payment_date,
                 p.remarks,
+                p.balance_after,
                 p.amount as deposit_paid
             FROM bookings b
             LEFT JOIN customers c ON b.customer_id = c.id
@@ -174,9 +175,14 @@ class BookingModel extends Model
         }
 
         // Join with customers table to get name, email, and phone
-        $sql = "SELECT b.*, c.full_name, c.email, c.phone 
+        $sql = "SELECT b.*, c.full_name, c.email, c.phone, 
+                   p.payment_method, 
+                   p.verified as payment_verify_status, 
+                   p.amount as payment_amount, 
+                   p.balance_after
                 FROM bookings b
                 LEFT JOIN customers c ON b.customer_id = c.id
+                LEFT JOIN payments p ON b.id = p.booking_id
                 $searchQuery
                 ORDER BY b.created_at DESC
                 LIMIT :offset, :limit";
@@ -199,13 +205,17 @@ class BookingModel extends Model
     {
         $searchQuery = "";
         if (!empty($search)) {
-            $searchQuery = " LEFT JOIN customers c ON b.customer_id = c.id 
-                            WHERE b.booking_ref_no LIKE :search 
-                            OR c.full_name LIKE :search 
-                            OR c.email LIKE :search ";
+            $searchQuery = " WHERE b.booking_ref_no LIKE :search 
+                        OR c.full_name LIKE :search 
+                        OR c.email LIKE :search ";
         }
 
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM bookings b $searchQuery");
+        $sql = "SELECT COUNT(*) as total 
+            FROM bookings b
+            LEFT JOIN customers c ON b.customer_id = c.id
+            $searchQuery";
+
+        $stmt = $this->db->prepare($sql);
 
         if (!empty($search)) {
             $searchTerm = "%$search%";
@@ -213,8 +223,9 @@ class BookingModel extends Model
         }
 
         $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        return $stmt->fetchColumn();
+        return $row ? (int)$row['total'] : 0;
     }
 
     // Delete booking and related data in dependent tables

@@ -36,21 +36,6 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function verifyPayment($booking_id)
-    {
-        $payment = $this->bookingModel->getPaymentByBookingId($booking_id);
-
-        if (!$payment) {
-            $_SESSION['error'] = "No payment record found for this booking.";
-            header("Location: " . APP_URL . "/admin/bookings");
-            exit;
-        }
-        
-        $data['payment'] = $payment;
-
-        $this->view('admin/payments/verify_payment', $data);
-    }
-
     public function updateStatus() 
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -80,5 +65,43 @@ class PaymentController extends Controller
             header("Location: " . APP_URL . "/dashboard");
             exit;
         }
+    }
+
+    public function verifyPayment($id)
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $status = $_POST['status']; // 'verified' or 'rejected'
+            $reason = $_POST['rejection_reason'] ?? '';
+
+            $success = $this->paymentModel->updateVerificationStatus($id, $status, $reason);
+
+            if ($success) {
+                if ($status === 'verified') {
+                    $payment = $this->paymentModel->getPaymentById($id);
+                    
+                    $this->bookingModel->updateBookingStatus(
+                        $payment['booking_id'], 
+                        'paid',      // payment_status
+                        'confirmed'  // booking_status
+                    );
+                }
+                Flash::set('success', 'Payment status updated to ' . strtoupper($status));
+            } else {
+                Flash::set('error', 'Failed to update status.');
+            }
+            
+            header('Location: ' . APP_URL . '/admin/payments/verify/' . $id);
+            exit;
+        }
+
+        $payment = $this->paymentModel->getPaymentById($id);
+
+        if (!$payment) {
+            Flash::set('error', 'No payment record found.');
+            header("Location: " . APP_URL . "/admin/payments");
+            exit;
+        }
+        
+        $this->view('admin/payments/view', ['payment' => $payment]);
     }
 }

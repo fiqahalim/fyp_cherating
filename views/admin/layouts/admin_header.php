@@ -54,7 +54,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     // Add Pending QR
                     data.pending_qr.forEach(item => {
                         html += `
-                        <a class="dropdown-item d-flex align-items-center" href="<?= $base_url ?>/admin/bookings/view_payment">
+                        <a class="dropdown-item d-flex align-items-center" href="<?= $base_url ?>/admin/payments">
                             <div class="mr-3">
                                 <div class="icon-circle bg-warning"><i class="fas fa-qrcode text-white"></i></div>
                             </div>

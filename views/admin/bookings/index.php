@@ -39,30 +39,51 @@
                             <table class="table table-bordered dataTable" id="dataTable" width="100%" cellspacing="0" role="grid" aria-describedby="dataTable_info" style="width: 100%;">
                                 <thead>
                                     <tr role="row">
-                                        <th>Booking Ref.No</th>
-                                        <th>Full Name</th>
-                                        <th>Email</th>
-                                        <th>Phone</th>
+                                        <th>Ref.No</th>
+                                        <th>Customer</th>
                                         <th>Check-In</th>
                                         <th>Check-Out</th>
+                                        <th>Method</th>
+                                        <th>Deposit</th>
+                                        <th>Balance After</th>
                                         <th>Payment Status</th>
-                                        <th>Total Amount (MYR)</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach ($bookings as $booking): ?>
+                                        <?php
+                                            $method = $booking['payment_method'] ?? '';
+                                            $vStatus = $booking['payment_verify_status'] ?? '';
+                                            $isWaitingQR = ($method === 'qr' && $vStatus === 'pending');
+                                        ?>
                                         <tr>
                                             <td class="text-primary"><strong><?= htmlspecialchars($booking['booking_ref_no']) ?></strong></td>
                                             <td><?= htmlspecialchars($booking['full_name']) ?></td>
-                                            <td><?= htmlspecialchars($booking['email']) ?></td>
-                                            <td><?= htmlspecialchars($booking['phone']) ?></td>
-                                            <td><?= htmlspecialchars($booking['check_in']) ?></td>
-                                            <td><?= htmlspecialchars($booking['check_out']) ?></td>
-                                            <td class="<?= strtolower($booking['payment_status']) === 'unpaid' ? 'payment-status-unpaid' : '' ?>">
-                                                <?= ucfirst(htmlspecialchars($booking['payment_status'])) ?>
+                                            <td><?= date('d M Y', strtotime($booking['check_in'])) ?></td>
+                                            <td><?= date('d M Y', strtotime($booking['check_out'])) ?></td>
+                                            <td>
+                                                <?php if (strtolower($method) === 'qr'): ?>
+                                                    <span class="badge badge-light text-dark"><i class="fas fa-qrcode text-primary"></i> QR</span>
+                                                <?php elseif (strtolower($method) === 'cash'): ?>
+                                                    <span class="badge badge-light text-dark"><i class="fas fa-money-bill-wave text-success"></i> Cash</span>
+                                                <?php else: ?>
+                                                    <span class="text-muted"><?= strtoupper($method) ?></span>
+                                                <?php endif; ?>
                                             </td>
-                                            <td><strong><?= htmlspecialchars($booking['total_amount']) ?></strong></td>
+                                            <td><strong>RM <?= number_format($booking['payment_amount'], 2) ?></strong></td>
+                                            <td><strong>RM <?= number_format($booking['balance_after'], 2) ?></strong></td>
+                                            <td>
+                                                <?php if ($isWaitingQR): ?>
+                                                    <span class="badge badge-info animate-pulse">
+                                                        <i class="fas fa-clock"></i> Waiting Verification
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="badge <?= $booking['payment_status'] === 'paid' ? 'badge-success' : 'badge-danger' ?>">
+                                                        <?= strtoupper($booking['payment_status']) ?>
+                                                    </span>
+                                                <?php endif; ?>
+                                            </td>
                                             <td class="action-buttons">
                                                 <a href="<?= APP_URL . '/admin/bookings/view/' . $booking['id'] ?>" class="btn btn-info  btn-sm"><i class="fas fa-eye"></i>
                                                 </a>

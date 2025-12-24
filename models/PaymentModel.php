@@ -6,18 +6,18 @@ class PaymentModel extends Model
     {
         $searchQuery = "";
         if (!empty($search)) {
-            // Search by Ref No, Full Name, or Email
-            $searchQuery = " WHERE b.booking_ref_no LIKE :search 
-                            OR c.full_name LIKE :search 
-                            OR c.email LIKE :search ";
+            $searchQuery = "WHERE b.booking_ref_no LIKE :search 
+                        OR c.full_name LIKE :search 
+                        OR p.payment_ref_no LIKE :search ";
         }
 
         // Join with customers table to get name, email, and phone
-        $sql = "SELECT b.*, c.full_name, c.email, c.phone 
-                FROM bookings b
-                LEFT JOIN customers c ON b.customer_id = c.id
+        $sql = "SELECT p.*, b.booking_ref_no, c.full_name 
+                FROM payments p
+                JOIN bookings b ON p.booking_id = b.id
+                JOIN customers c ON b.customer_id = c.id
                 $searchQuery
-                ORDER BY b.created_at DESC
+                ORDER BY p.created_at DESC
                 LIMIT :offset, :limit";
 
         $stmt = $this->db->prepare($sql);
@@ -38,22 +38,24 @@ class PaymentModel extends Model
     {
         $searchQuery = "";
         if (!empty($search)) {
-            $searchQuery = " LEFT JOIN customers c ON b.customer_id = c.id 
-                            WHERE b.booking_ref_no LIKE :search 
-                            OR c.full_name LIKE :search 
-                            OR c.email LIKE :search ";
+            $searchQuery = " WHERE b.booking_ref_no LIKE :search 
+                        OR c.full_name LIKE :search 
+                        OR p.payment_ref_no LIKE :search ";
         }
 
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM bookings b $searchQuery");
+        $sql = "SELECT COUNT(*) as total 
+                FROM payments p
+                JOIN bookings b ON p.booking_id = b.id
+                JOIN customers c ON b.customer_id = c.id
+                $searchQuery";
 
+        $stmt = $this->db->prepare($sql);
         if (!empty($search)) {
-            $searchTerm = "%$search%";
-            $stmt->bindValue(':search', $searchTerm);
+            $stmt->bindValue(':search', "%$search%");
         }
-
         $stmt->execute();
-
-        return $stmt->fetchColumn();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? (int)$row['total'] : 0;
     }
 
     public function deletePayment($id)
