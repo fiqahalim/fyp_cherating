@@ -8,6 +8,7 @@ if (session_status() === PHP_SESSION_NONE) {
 // 1) Config & helpers (always load first)
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/helpers/functions.php';
+require_once __DIR__ . '/helpers/ChatbotHelper.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
 // 2) Global error & exception handler

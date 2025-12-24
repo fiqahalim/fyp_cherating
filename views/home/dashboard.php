@@ -239,15 +239,6 @@ $allBookings = array_merge($upcomingBookings ?? [], $pastBookings ?? []);
   </div>
 </div>
 
-<style>
-.upcoming-card { border-left: 5px solid #212529 !important; }
-.past-card { border-left: 5px solid #007bff !important; }
-.booking-card-enhanced:hover { transform: translateY(-3px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15) !important; transition: 0.3s; }
-/* Clean accordion styles */
-.accordion-button:not(.collapsed) { background-color: #212529; color: white; box-shadow: none; }
-.accordion-button:focus { box-shadow: none; border-color: rgba(0,0,0,.125); }
-</style>
-
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 

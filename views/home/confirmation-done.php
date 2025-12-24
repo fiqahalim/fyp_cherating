@@ -12,20 +12,32 @@
     </div>
 
     <?php 
-        $isFPX = (strtolower($booking['payment_method']) === 'fpx');
-        $isPending = (!isset($payment['verified']) || $payment['verified'] === 'pending');
+        $isFPX = (isset($booking['payment_method']) && strtolower($booking['payment_method']) === 'fpx');
+
+        $paymentData = $payment ? $payment : [];
+        $status = $paymentData['verified'] ?? 'pending';
+        $isPending = ($status === 'pending');
         
         if ($isFPX && $isPending):
     ?>
         <div class="alert alert-warning border-warning shadow-sm mt-4 text-center">
             <h5 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Localhost Payment Sync</h5>
             <p>If you have already completed your payment but the status below still says <strong>PENDING</strong>, please click the button below:</p>
-            <?php if (!empty($payment['billplz_id'])): ?>
-                <a href="<?= APP_URL ?>/verify-payment/<?= $payment['billplz_id'] ?>" class="btn btn-warning fw-bold">
+
+            <?php 
+                // Check both billplz_id and payment_ref_no
+                $billId = !empty($paymentData['billplz_id']) ? $paymentData['billplz_id'] : ($paymentData['payment_ref_no'] ?? null);
+                
+                if ($billId): 
+            ?>
+                <a href="<?= APP_URL ?>/verify-payment/<?= htmlspecialchars($billId) ?>" class="btn btn-warning fw-bold">
                     <i class="fas fa-sync-alt"></i> VERIFY MY PAYMENT NOW
                 </a>
             <?php else: ?>
-                <p class="text-danger small">Error: Bill ID not found. Please contact support.</p>
+                <div class="text-danger">
+                    <p class="mb-0"><strong>Error:</strong> Payment reference not found for Booking #<?= $booking['id'] ?>.</p>
+                    <p class="small text-muted">Please refresh the page. If the error persists, contact admin.</p>
+                </div>
             <?php endif; ?>
         </div>
     <?php endif; ?>

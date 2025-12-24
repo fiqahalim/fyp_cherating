@@ -20,7 +20,8 @@ Route::get('/finalize-booking', 'Home@finalizeBooking');
 Route::get('/confirmation-done/{booking_id}', 'Home@confirmationDone');
 Route::get('/download-invoice/{booking_id}', 'Home@downloadInvoice');
 Route::post('/check-customer-availability', 'Home@checkCustomerAvailability');
-Route::get('/booking/cancel/{id}', 'BookingController@cancelBooking');
+Route::get('/booking/cancel/{id}', 'Booking@cancelBooking');
+Route::match(['GET', 'POST'], '/chatbot/ask', 'Chatbot@ask');
 
 // Review Routes
 Route::get('/get-reviews/{room_id}', 'Home@getReviews');

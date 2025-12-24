@@ -14,6 +14,7 @@ define("DB_PASS", "");
  */
 define("APP_NAME", "Cherating Guest House");
 define("APP_URL", "http://localhost/fyp_cherating"); // Adjust if needed
+define('OPENAI_KEY', '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');
 
 /**
  * Error Reporting

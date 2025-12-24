@@ -405,20 +405,26 @@ class BookingModel extends Model
 
     public function addPayment($data)
     {
-        $sql = "INSERT INTO payments (booking_id, billplz_id, payment_ref_no, payment_method, amount, payment_type, receipt_image, verified) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO payments (booking_id, billplz_id, payment_ref_no, payment_method, amount, balance_after, payment_type, receipt_image, verified, payment_date) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
         $stmt = $this->db->prepare($sql);
         
-        return $stmt->execute([
+        $result = $stmt->execute([
             $data['booking_id'],
             $data['billplz_id'] ?? null,
             $data['payment_ref_no'],
             $data['payment_method'],
             $data['amount'],
+            $data['balance_after'] ?? 0,
             $data['payment_type'],
             $data['receipt_image'] ?? null,
             $data['verified'] ?? 'pending'
         ]);
+
+        if (!$result) {
+            error_log("Database Error in addPayment: " . implode(" ", $stmt->errorInfo()));
+        }
+        return $result;
     }
 
     public function getPaymentByBillplzId($billplz_id)
@@ -445,7 +451,6 @@ class BookingModel extends Model
         return $stmt->execute([$payment_status, $booking_status, $booking_id]);
     }
 
-    // Add this to BookingModel.php
     public function verifyBillplzPayment($bill_id)
     {
         $api_key = 'd6f9bdfc-70fd-4f17-8129-7daa4302905f';
@@ -475,10 +480,12 @@ class BookingModel extends Model
 
     public function getPaymentByBookingId($booking_id)
     {
-        $stmt = $this->db->prepare("SELECT * FROM payments WHERE booking_id = ? LIMIT 1");
+        $stmt = $this->db->prepare("SELECT * FROM payments WHERE booking_id = ? ORDER BY id DESC LIMIT 1");
         $stmt->execute([$booking_id]);
 
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $result;
     }
 
     // Locked Room

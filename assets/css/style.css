@@ -856,6 +856,28 @@ button {
 
 /** end our_room section **/
 
+/* dashboard */
+.upcoming-card { 
+     border-left: 5px solid #212529 !important; 
+}
+.past-card { 
+     border-left: 5px solid #007bff !important; 
+}
+.booking-card-enhanced:hover { 
+     transform: translateY(-3px); 
+     box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15) !important; 
+     transition: 0.3s; 
+}
+.accordion-button:not(.collapsed) { 
+     background-color: #212529; 
+     color: white; 
+     box-shadow: none; 
+}
+.accordion-button:focus { 
+     box-shadow: none; 
+     border-color: rgba(0,0,0,.125); 
+}
+
 /* 360 Virtual Tour */
 .custom-hotspot {
     height: 30px;

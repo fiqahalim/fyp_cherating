@@ -482,11 +482,21 @@ class HomeController extends Controller
 
         // 4. Handle Payment logic
         if ($payment_method === 'fpx') {
+            $cust_name  = trim($postData['name'] ?? 'Guest');
+            $cust_email = trim($postData['email'] ?? '');
+            $cust_phone = trim($postData['phone'] ?? '');
+
+            if (empty($cust_email) || !filter_var($cust_email, FILTER_VALIDATE_EMAIL)) {
+                Flash::set('error', 'A valid email is required for FPX payment.');
+                header('Location: ' . APP_URL . '/booking-confirmation');
+                exit;
+            }
+
             // Create the Billplz Bill
             $bill = $this->createBillplzBill(
-                $postData['name'],
-                $postData['email'], 
-                $postData['phone'], 
+                $cust_name,
+                $cust_email, 
+                $cust_phone, 
                 $depositAmount, 
                 $booking_id
             );
@@ -509,7 +519,12 @@ class HomeController extends Controller
                 header('Location: ' . $bill['url']);
                 exit;
             } else {
-                Flash::set('error', 'Billplz Error: ' . ($bill['error']['message'] ?? 'Connection failed'));
+                $errorMessage = 'Connection failed';
+                if (isset($bill['error'])) {
+                    $errorMessage = is_array($bill['error']) ? json_encode($bill['error']) : $bill['error'];
+                }
+                
+                Flash::set('error', 'Billplz API Error: ' . $errorMessage);
                 header('Location: ' . APP_URL . '/booking-confirmation');
                 exit;
             }
@@ -543,7 +558,11 @@ class HomeController extends Controller
             return;
         }
 
-        $this->view('home/confirmation-done', ['booking' => $booking, 'payment' => $payment]);
+        $this->view('home/confirmation-done', [
+            'booking' => $booking, 
+            'payment' => $payment,
+            'booking_id' => $booking_id
+        ]);
     }
 
     public function downloadInvoice($booking_id)
