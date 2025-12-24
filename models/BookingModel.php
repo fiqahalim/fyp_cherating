@@ -245,20 +245,39 @@ class BookingModel extends Model
 
     public function getBookingsByCustomer($customerId)
     {
-        // Get all bookings for the customer
-        $stmt = $this->db->prepare("SELECT * FROM bookings WHERE customer_id = ? ORDER BY check_in DESC");
+        $sql = "SELECT b.*, 
+                MAX(p.amount) AS deposit_paid, 
+                MAX(p.payment_method) AS payment_method, 
+                MAX(p.verified) AS payment_verified
+                FROM bookings b
+                LEFT JOIN payments p ON b.id = p.booking_id AND p.payment_type = 'deposit'
+                WHERE b.customer_id = ? 
+                GROUP BY b.id 
+                ORDER BY b.check_in DESC";
+
+        $stmt = $this->db->prepare($sql);
         $stmt->execute([$customerId]);
         $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Add room details for each booking
         foreach ($bookings as &$booking) {
+            $booking['deposit_paid'] = $booking['deposit_paid'] ?? 0;
+            $booking['payment_method'] = $booking['payment_method'] ?? 'N/A';
+
             $stmtRooms = $this->db->prepare("
-                SELECT r.name, r.price, br.rooms_booked 
+                SELECT 
+                    r.id as room_id, 
+                    r.name, 
+                    r.price, 
+                    br.rooms_booked,
+                    MAX(rv.id) as review_id
                 FROM booking_rooms br 
                 JOIN rooms r ON br.room_id = r.id 
+                LEFT JOIN room_reviews rv ON rv.room_id = r.id AND rv.customer_id = ?
                 WHERE br.booking_id = ?
+                GROUP BY r.id, r.name, r.price, br.rooms_booked
             ");
-            $stmtRooms->execute([$booking['id']]);
+            $stmtRooms->execute([$customerId, $booking['id']]);
             $booking['rooms'] = $stmtRooms->fetchAll(PDO::FETCH_ASSOC);
         }
 

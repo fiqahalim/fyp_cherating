@@ -136,6 +136,14 @@
 
     <div class="text-center">
         <a href="<?= APP_URL ?>/download-invoice/<?= $booking['id'] ?>" class="btn btn-primary btn-lg me-3" target="_blank">Download Invoice</a>
-        <a href="<?= APP_URL ?>" class="btn btn-outline btn-lg">Back to Home</a>
+        <?php if (isset($_SESSION['user_id'])): ?>
+            <a href="<?= APP_URL ?>/dashboard" class="btn btn-success btn-lg">
+                <i class="fas fa-tachometer-alt"></i> Back to Dashboard
+            </a>
+        <?php else: ?>
+            <a href="<?= APP_URL ?>" class="btn btn-outline-secondary btn-lg">
+                <i class="fas fa-home"></i> Back to Home
+            </a>
+        <?php endif; ?>
     </div>
 </div>

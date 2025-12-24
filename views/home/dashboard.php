@@ -1,316 +1,351 @@
 <?php
 /**
- * Returns a Bootstrap badge class based on booking status.
+ * Helpers
  */
 function getStatusBadge($status) {
     $status = strtolower($status);
     switch ($status) {
-        case 'confirmed':
-            return '<span class="badge bg-success">Confirmed</span>';
-        case 'pending':
-            return '<span class="badge bg-warning text-dark">Pending</span>';
-        case 'cancelled':
-            return '<span class="badge bg-danger">Cancelled</span>';
-        default:
-            return '<span class="badge bg-secondary">' . ucfirst($status) . '</span>';
+        case 'confirmed': return '<span class="badge bg-success">Confirmed</span>';
+        case 'pending':   return '<span class="badge bg-warning text-dark">Pending</span>';
+        case 'cancelled': return '<span class="badge bg-danger">Cancelled</span>';
+        default:          return '<span class="badge bg-secondary">' . ucfirst($status) . '</span>';
     }
 }
-?>
 
-<?php
-// ----------------------------------------------------------------------
-// 1. DATA PREPARATION: Create a central JavaScript variable for all bookings
-// This happens at the top to ensure the data is available before the script runs.
-// ----------------------------------------------------------------------
-// Combine all bookings into one array for easy JavaScript lookup
-$allBookings = array_merge($upcomingBookings, $pastBookings);
+function canCancelWithRefund($checkInDate) {
+    $today = new DateTime();
+    $checkIn = new DateTime($checkInDate);
+    $interval = $today->diff($checkIn);
+    $daysRemaining = (int)$interval->format("%r%a");
+    return ($daysRemaining >= 5);
+}
+
+$allBookings = array_merge($upcomingBookings ?? [], $pastBookings ?? []);
 ?>
 
 <script>
-    // Define a JavaScript object mapping Booking ID to its full details
     const BOOKINGS_DATA = {};
-    <?php foreach ($allBookings as $booking): ?>
-        // Ensure data is properly JSON encoded for JavaScript usage
-        BOOKINGS_DATA[<?= $booking['id'] ?>] = <?= json_encode($booking) ?>;
+    <?php foreach ($allBookings as $booking):
+        $displayDeposit = $booking['deposit_paid'] ?? 0;
+        $displayMethod = !empty($booking['payment_method']) ? $booking['payment_method'] : 'Manual/QR';
+    ?>
+        BOOKINGS_DATA[<?= $booking['id'] ?>] = <?= json_encode(array_merge($booking, [
+            'deposit_paid' => $displayDeposit,
+            'payment_method' => $displayMethod
+        ])) ?>;
     <?php endforeach; ?>
 </script>
 
 <div class="container-fluid py-4">
-    <h2 class="mb-4 text-primary">👋 Welcome, <?= htmlspecialchars($_SESSION['username'] ?? 'Customer') ?>!</h2>
-    <p class="lead text-muted">Here is a summary of your booking history with us.</p>
-    
-    <?php 
-    // Re-check helper function if it was not in a linked file
-    if (!function_exists('getStatusBadge')) {
-        // ... (function definition skipped as it's already at the top)
-    }
-    
-    // Check if the total number of bookings is zero
-    $totalBookings = count($upcomingBookings) + count($pastBookings);
-    ?>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-primary mb-0">👋 Welcome, <?= htmlspecialchars($_SESSION['username'] ?? 'Customer') ?>!</h2>
+            <p class="lead text-muted">Manage your guesthouse stays and payments.</p>
+        </div>
+        <?php if (!empty($allBookings)): ?>
+            <a href="<?= APP_URL ?>/rooms" class="btn btn-success shadow-sm px-4" style="border-radius: 20px;">
+                <i class="fas fa-plus"></i> New Booking
+            </a>
+        <?php endif; ?>
+    </div>
 
-    <?php if ($totalBookings === 0): ?>
-        <div class="alert alert-info py-4 text-center">
+    <?php if (empty($allBookings)): ?>
+        <div class="alert alert-info py-4 text-center border-0 shadow-sm">
             <h4 class="alert-heading">No Bookings Found</h4>
             <p>Ready for your next getaway? Start searching for rooms now!</p>
-            <a href="<?= APP_URL ?>" class="btn btn-primary mt-2">Book Now</a>
-        </div>
-    <?php endif; ?>
-
-    <h3 class="mt-5 mb-3 text-dark border-bottom pb-2">🗓️ Upcoming Bookings (<?= count($upcomingBookings) ?>)</h3>
-    
-    <?php if (empty($upcomingBookings)): ?>
-        <div class="alert alert-light text-center">
-            You have no confirmed upcoming bookings. Time to plan a trip!
+            <a href="<?= APP_URL ?>/rooms" class="btn btn-primary shadow-sm px-4 mt-2">Book Now</a>
         </div>
     <?php else: ?>
-        <div class="row">
-            <?php foreach ($upcomingBookings as $booking): 
-                $total_rooms = array_sum(array_column($booking['rooms'], 'rooms_booked'));
-            ?>
-                <div class="col-md-12 col-lg-6 mb-4">
-                    <div class="card h-100 shadow-sm border-0 booking-card-enhanced upcoming-card">
-                        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
-                            <h5 class="mb-0 text-white">
-                                Booking Ref: <strong><?= htmlspecialchars($booking['booking_ref_no'] ?? $booking['id']) ?></strong>
-                            </h5>
-                            <div><?= getStatusBadge($booking['status']) ?></div>
+
+    <div class="accordion border-0 shadow-sm" id="bookingAccordion">
+        
+        <div class="accordion-item border-0 mb-3">
+            <h2 class="accordion-header" id="headingUpcoming">
+                <button class="accordion-button bg-dark text-white rounded-top" type="button" data-bs-toggle="collapse" data-bs-target="#collapseUpcoming" aria-expanded="true">
+                    <span class="me-2">🗓️</span> Upcoming Bookings (<?= count($upcomingBookings) ?>)
+                </button>
+            </h2>
+            <div id="collapseUpcoming" class="accordion-collapse collapse show" data-bs-parent="#bookingAccordion">
+                <div class="accordion-body bg-light">
+                    <?php if (empty($upcomingBookings)): ?>
+                        <div class="alert alert-light text-center border-0">You have no upcoming stays.</div>
+                    <?php else: ?>
+                        <div class="row">
+                            <?php foreach ($upcomingBookings as $booking): 
+                                $total_rooms = array_sum(array_column($booking['rooms'], 'rooms_booked'));
+                                $isPaid = (strtolower($booking['payment_status']) === 'paid');
+                                $allowCancel = canCancelWithRefund($booking['check_in']);
+                                $deposit = $booking['deposit_paid'] ?? 0;
+                            ?>
+                                <div class="col-md-12 col-lg-6 mb-4">
+                                    <div class="card h-100 shadow-sm border-0 booking-card-enhanced upcoming-card">
+                                        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
+                                            <h5 class="mb-0 text-white">Ref: <strong><?= htmlspecialchars($booking['booking_ref_no']) ?></strong></h5>
+                                            <div><?= getStatusBadge($booking['status']) ?></div>
+                                        </div>
+
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between mb-3 border-bottom pb-2 text-center">
+                                                <div><small class="text-muted d-block">Check-in</small><span class="fw-bold fs-6"><?= date('D, M j', strtotime($booking['check_in'])) ?></span></div>
+                                                <div><small class="text-muted d-block">Nights</small><span class="fw-bold fs-6"><?= $booking['total_nights'] ?></span></div>
+                                                <div><small class="text-muted d-block">Check-out</small><span class="fw-bold fs-6"><?= date('D, M j', strtotime($booking['check_out'])) ?></span></div>
+                                            </div>
+
+                                            <div class="p-3 mb-3 rounded <?= $isPaid ? 'bg-light border' : 'bg-warning-subtle border border-warning' ?>">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <span class="small fw-bold">Grand Total:</span>
+                                                    <strong class="text-dark">RM <?= number_format($booking['total_amount'], 2) ?></strong>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span class="small fw-bold text-info">Deposit Paid (via <?= strtoupper($booking['payment_method'] ?: 'QR') ?>):</span>
+                                                    <span class="text-info fw-bold">RM <?= number_format($booking['deposit_paid'], 2) ?></span>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center border-top pt-1">
+                                                    <span class="small">Payment Status:</span>
+                                                    <span class="badge <?= $isPaid ? 'bg-success' : 'bg-danger' ?> text-white"><?= strtoupper($booking['payment_status']) ?></span>
+                                                </div>
+
+                                                <?php if (!$isPaid && $booking['status'] !== 'cancelled'): ?>
+                                                    <form action="<?= APP_URL ?>/booking/upload-receipt" method="POST" enctype="multipart/form-data" class="mt-3 p-2 bg-white rounded border">
+                                                        <input type="hidden" name="booking_id" value="<?= $booking['id'] ?>">
+                                                        <label class="small fw-bold mb-1"><i class="fas fa-upload"></i> Upload Full Payment Receipt:</label>
+                                                        <div class="input-group input-group-sm">
+                                                            <input type="file" name="receipt_image" class="form-control" required accept="image/*,.pdf">
+                                                            <button class="btn btn-primary" type="submit">Upload</button>
+                                                        </div>
+                                                    </form>
+                                                <?php endif; ?>
+                                            </div>
+
+                                            <h6 class="text-secondary mb-2 small">Room Summary (<?= $total_rooms ?> Rooms)</h6>
+                                            <ul class="list-group list-group-flush mb-3 small">
+                                                <?php foreach ($booking['rooms'] as $room): ?>
+                                                    <li class="list-group-item d-flex justify-content-between py-1 bg-transparent">
+                                                        <span><?= htmlspecialchars($room['name']) ?></span>
+                                                        <span>Qty: <strong><?= $room['rooms_booked'] ?></strong></span>
+                                                    </li>
+                                                <?php endforeach; ?>
+                                            </ul>
+                                        </div>
+
+                                        <div class="card-footer d-flex justify-content-between bg-white border-top-0 pb-3">
+                                            <button type="button" class="btn btn-primary btn-sm view-details-btn px-3" data-bs-toggle="modal" data-bs-target="#bookingDetailsModal" data-booking-id="<?= $booking['id'] ?>">
+                                                View Details
+                                            </button>
+
+                                            <?php if ($booking['status'] !== 'cancelled'): ?>
+                                                <?php if ($allowCancel): ?>
+                                                    <a href="<?= APP_URL ?>/booking/cancel/<?= $booking['id'] ?>" class="btn btn-outline-danger btn-sm" onclick="return confirm('Confirm cancellation? Since check-in is more than 5 days away, your deposit will be refunded.')">
+                                                        Cancel & Refund
+                                                    </a>
+                                                <?php else: ?>
+                                                    <span class="text-muted small align-self-center"><i class="fas fa-lock"></i> Non-refundable</span>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
-
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-                                <div><small class="text-muted d-block">Check-in</small><span class="fw-bold fs-5"><?= date('D, M j', strtotime($booking['check_in'])) ?></span></div>
-                                <div class="text-center"><small class="text-muted d-block">Total Nights</small><span class="fw-bold fs-5"><?= (int)$booking['total_nights'] ?></span></div>
-                                <div><small class="text-muted d-block">Check-out</small><span class="fw-bold fs-5"><?= date('D, M j', strtotime($booking['check_out'])) ?></span></div>
-                            </div>
-
-                            <h6 class="text-secondary mb-2">Room Summary (<?= $total_rooms ?> Rooms)</h6>
-                            <ul class="list-group list-group-flush mb-3 small">
-                                <?php foreach ($booking['rooms'] as $room): ?>
-                                    <li class="list-group-item d-flex justify-content-between py-1">
-                                        <span><?= htmlspecialchars($room['name']) ?></span>
-                                        <span>Qty: **<?= $room['rooms_booked'] ?>**</span>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-
-                            <div class="d-flex justify-content-between pt-2 border-top">
-                                <strong class="text-dark">Total Amount:</strong>
-                                <strong class="text-success fs-5">RM <?= number_format($booking['total_amount'], 2) ?></strong>
-                            </div>
-                        </div>
-
-                        <div class="card-footer text-end">
-                            <button type="button" 
-                                    class="btn btn-primary btn-sm view-details-btn"
-                                    data-bs-toggle="modal" 
-                                    data-bs-target="#bookingDetailsModal"
-                                    data-booking-id="<?= $booking['id'] ?>">
-                                View Details
-                            </button>
-                        </div>
-                    </div>
+                    <?php endif; ?>
                 </div>
-            <?php endforeach; ?>
+            </div>
         </div>
-    <?php endif; ?>
 
-    <h3 class="mt-5 mb-3 text-dark border-bottom pb-2">🕰️ Past Bookings (<?= count($pastBookings) ?>)</h3>
-
-    <?php if (empty($pastBookings)): ?>
-        <div class="alert alert-light text-center">
-            No completed past bookings found.
-        </div>
-    <?php else: ?>
-        <div class="row">
-            <?php foreach ($pastBookings as $booking): 
-                $total_rooms = array_sum(array_column($booking['rooms'], 'rooms_booked'));
-            ?>
-                <div class="col-md-12 col-lg-6 mb-4">
-                    <div class="card h-100 shadow-sm border-0 booking-card-enhanced past-card">
-                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-3">
-                            <h5 class="mb-0">
-                                Booking Ref: <strong><?= htmlspecialchars($booking['booking_ref_no'] ?? $booking['id']) ?></strong>
-                            </h5>
-                            <div><?= getStatusBadge($booking['status']) ?></div>
+        <div class="accordion-item border-0">
+            <h2 class="accordion-header" id="headingPast">
+                <button class="accordion-button collapsed bg-secondary text-white rounded" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePast" aria-expanded="false">
+                    <span class="me-2">🕰️</span> Past Bookings (<?= count($pastBookings) ?>)
+                </button>
+            </h2>
+            <div id="collapsePast" class="accordion-collapse collapse" data-bs-parent="#bookingAccordion">
+                <div class="accordion-body">
+                    <?php if (empty($pastBookings)): ?>
+                        <p class="text-center text-muted">No past booking history found.</p>
+                    <?php else: ?>
+                        <div class="row">
+                            <?php foreach ($pastBookings as $booking): ?>
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card shadow-sm border-0 past-card">
+                                        <div class="card-body py-2 d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <small class="text-muted d-block">Ref: <?= $booking['booking_ref_no'] ?></small>
+                                                <span class="fw-bold"><?= date('M Y', strtotime($booking['check_in'])) ?> stay</span>
+                                            </div>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#bookingDetailsModal" data-booking-id="<?= $booking['id'] ?>">
+                                                View
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
-
-                        <div class="card-body text-muted">
-                            <div class="d-flex justify-content-between mb-3 border-bottom pb-2">
-                                <div><small class="text-muted d-block">Check-in</small><span class="fw-bold fs-5"><?= date('D, M j', strtotime($booking['check_in'])) ?></span></div>
-                                <div class="text-center"><small class="text-muted d-block">Total Nights</small><span class="fw-bold fs-5"><?= (int)$booking['total_nights'] ?></span></div>
-                                <div><small class="text-muted d-block">Check-out</small><span class="fw-bold fs-5"><?= date('D, M j', strtotime($booking['check_out'])) ?></span></div>
-                            </div>
-
-                            <h6 class="text-secondary mb-2">Room Summary (<?= $total_rooms ?> Rooms)</h6>
-                            <ul class="list-group list-group-flush mb-3 small">
-                                <?php foreach ($booking['rooms'] as $room): ?>
-                                    <li class="list-group-item d-flex justify-content-between py-1">
-                                        <span><?= htmlspecialchars($room['name']) ?></span>
-                                        <span>Qty: **<?= $room['rooms_booked'] ?>**</span>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-
-                            <div class="d-flex justify-content-between pt-2 border-top">
-                                <strong class="text-dark">Total Amount:</strong>
-                                <strong class="text-success fs-5">RM <?= number_format($booking['total_amount'], 2) ?></strong>
-                            </div>
-                        </div>
-
-                        <div class="card-footer text-end">
-                            <button type="button" 
-                                    class="btn btn-outline-secondary btn-sm view-details-btn"
-                                    data-bs-toggle="modal" 
-                                    data-bs-target="#bookingDetailsModal"
-                                    data-booking-id="<?= $booking['id'] ?>">
-                                View History
-                            </button>
-                        </div>
-                    </div>
+                    <?php endif; ?>
                 </div>
-            <?php endforeach; ?>
+            </div>
         </div>
+    </div>
     <?php endif; ?>
 </div>
 
-<div class="modal fade" id="bookingDetailsModal" tabindex="-1" aria-labelledby="bookingDetailsModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header bg-dark">
-        <h5 class="modal-title text-white" id="bookingDetailsModalLabel">Booking Details: <span id="modal-ref-no"></span></h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+<div class="modal fade" id="bookingDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark">
+                <h5 class="modal-title text-white">Booking: <span id="modal-ref-no"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="modal-content-area"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reviews -->
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title" id="reviewModalLabel">Rate Stay: <span id="review-room-name"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <div id="modal-content-area">Loading...</div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      </div>
+      <form action="<?= APP_URL ?>/submit-review" method="POST">
+        <div class="modal-body">
+            <input type="hidden" name="room_id" id="modal_review_room_id">
+            
+            <div class="mb-3">
+                <label class="form-label fw-bold">Rating</label>
+                <select name="rating" class="form-select" required>
+                    <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+                    <option value="4">⭐⭐⭐⭐ Very Good</option>
+                    <option value="3">⭐⭐⭐ Average</option>
+                    <option value="2">⭐⭐ Poor</option>
+                    <option value="1">⭐ Terrible</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Your Review</label>
+                <textarea name="comment" class="form-control" placeholder="How was your stay?" rows="4" required></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-warning fw-bold">Submit Review</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
 
 <style>
-/* Added specific color coding for upcoming/past cards */
-.upcoming-card {
-    border-left: 5px solid var(--bs-dark) !important; 
-}
-.past-card {
-    border-left: 5px solid var(--bs-primary) !important;
-}
-
-/* Ensure hover effect remains */
-.booking-card-enhanced:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15) !important;
-}
+.upcoming-card { border-left: 5px solid #212529 !important; }
+.past-card { border-left: 5px solid #007bff !important; }
+.booking-card-enhanced:hover { transform: translateY(-3px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15) !important; transition: 0.3s; }
+/* Clean accordion styles */
+.accordion-button:not(.collapsed) { background-color: #212529; color: white; box-shadow: none; }
+.accordion-button:focus { box-shadow: none; border-color: rgba(0,0,0,.125); }
 </style>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> <script>
+<script>
 $(document).ready(function() {
-    $('#bookingDetailsModal').on('show.bs.modal', function (event) {
-        const button = $(event.relatedTarget);
-        const bookingId = button.data('booking-id');
-        const modal = $(this);
-        const contentArea = modal.find('#modal-content-area');
-        
-        // Retrieve data from the pre-loaded global object
-        const booking = BOOKINGS_DATA[bookingId];
-
-        // Reset title and content
-        modal.find('#modal-ref-no').text('');
-        contentArea.html('<div class="text-center p-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Loading booking details...</p></div>');
-
-        if (booking) {
-            // Set Modal Title
-            modal.find('#modal-ref-no').text(booking.booking_ref_no || booking.id);
+    const detailModal = document.getElementById('bookingDetailsModal');
+    const reviewModal = document.getElementById('reviewModal');
+    
+    // review modal
+    if (reviewModal) {
+        reviewModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const roomId = button.getAttribute('data-room-id');
+            const roomName = button.getAttribute('data-room-name');
             
-            // Generate and load the detailed HTML content
-            const htmlContent = buildBookingDetailHtml(booking);
-            contentArea.html(htmlContent);
-        } else {
-            contentArea.html('<div class="alert alert-danger">Error: Booking data not found locally.</div>');
-        }
-    });
+            document.getElementById('modal_review_room_id').value = roomId;
+            document.getElementById('review-room-name').textContent = roomName;
+        });
+    }
 
-    // Helper function to build the detailed HTML content
+    // detail modal
+    if (detailModal) {
+        detailModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const bookingId = button.getAttribute('data-booking-id');
+            const booking = BOOKINGS_DATA[bookingId];
+            
+            if (booking) {
+                $('#modal-ref-no').text(booking.booking_ref_no);
+                $('#modal-content-area').html(buildBookingDetailHtml(booking));
+            }
+        });
+    }
+
     function buildBookingDetailHtml(booking) {
-        var roomsHtml = booking.rooms.map(room => `
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <strong>${room.name}</strong>
-                <span>${room.rooms_booked} room(s)</span>
-            </li>
-        `).join('');
+        let totalRoomsCount = 0;
+        booking.rooms.forEach(r => totalRoomsCount += parseInt(r.rooms_booked));
+        
+        const avgPrice = booking.total_amount / (booking.total_nights * totalRoomsCount);
+        
+        const depositPaid = parseFloat(booking.deposit_paid || 0);
+        const payMethod = (booking.payment_method || 'QR').toUpperCase();
 
-        const ucfirst = (str) => str.charAt(0).toUpperCase() + str.slice(1);
-        
-        // Helper function for date formatting
-        const formatDate = (dateString) => new Date(dateString).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        let roomsPriceListHtml = booking.rooms.map(room => {
+            const roomQty = parseInt(room.rooms_booked);
+            const roomDisplayPrice = avgPrice * roomQty;
+            return `
+                <div class="d-flex justify-content-between small mb-2 border-bottom pb-1">
+                    <span>
+                        ${roomQty} × ${room.name} 
+                        <br><small class="text-muted">(Avg. RM ${avgPrice.toFixed(2)} / night)</small>
+                    </span>
+                    <span class="fw-bold">RM ${roomDisplayPrice.toFixed(2)}</span>
+                </div>
+            `;
+        }).join('');
 
-        const paymentMethod = ucfirst(booking.payment_method || 'N/A');
-        const paymentStatus = ucfirst(booking.payment_status || 'unpaid');
-        const bookingStatus = ucfirst(booking.status || 'pending');
-        
-        const totalAmount = parseFloat(booking.total_amount).toFixed(2);
-        
-        // This structure closely mimics your confirmation-done.php page
+        const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+
         return `
             <div class="row">
-                <div class="col-12 text-center mb-4">
-                    <h2 class="text-primary">Booking Details</h2>
-                    <p class="lead">Ref: <strong>${booking.booking_ref_no || booking.id}</strong> | Status: ${getStatusBadgeJs(bookingStatus)}</p>
-                </div>
-                
                 <div class="col-md-6 border-end">
-                    <h5 class="text-primary mb-3">Itinerary</h5>
-                    <ul class="list-unstyled">
-                        <li><strong>Check-in:</strong> ${formatDate(booking.check_in)}</li>
-                        <li><strong>Check-out:</strong> ${formatDate(booking.check_out)}</li>
-                        <li><strong>Total Nights:</strong> ${booking.total_nights}</li>
-                    </ul>
+                    <h5 class="text-primary border-bottom pb-2">Stay Information</h5>
+                    <p class="mb-1"><strong>Check-in:</strong> ${formatDate(booking.check_in)}</p>
+                    <p class="mb-1"><strong>Check-out:</strong> ${formatDate(booking.check_out)}</p>
+                    <p class="mb-3"><strong>Total Nights:</strong> ${booking.total_nights}</p>
                     
-                    <h5 class="text-primary mt-4 mb-3">Rooms Booked</h5>
-                    <ul class="list-group mb-4">${roomsHtml}</ul>
+                    <h5 class="text-primary border-bottom pb-2">Price Breakdown</h5>
+                    ${roomsPriceListHtml}
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>Subtotal (per night)</span>
+                        <span class="fw-bold">RM ${(avgPrice * totalRoomsCount).toFixed(2)}</span>
+                    </div>
                 </div>
-                
                 <div class="col-md-6">
-                    <h5 class="text-primary mb-3">Financial Summary</h5>
-                    <div class="p-3 bg-light rounded shadow-sm">
-                        <div class="d-flex justify-content-between py-2">
-                            <span>Grand Total:</span>
-                            <strong class="fs-4 text-success">RM ${totalAmount}</strong>
+                    <div class="p-3 bg-dark rounded shadow-sm h-100">
+                        <h5 class="text-white text-center mb-4 border-bottom pb-2">Price Summary</h5>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="fs-5 text-white">Grand Total:</span>
+                            <span class="fs-4 fw-bold text-white">RM ${parseFloat(booking.total_amount).toFixed(2)}</span>
                         </div>
-                        <hr class="my-1">
-                        <div class="py-1">
-                            <strong class="d-block text-muted">Payment Method:</strong>
-                            <span>${paymentMethod} (${paymentStatus})</span>
+                        <div class="d-flex justify-content-between text-info fw-bold mb-3">
+                            <span>Deposit Paid (${payMethod}):</span>
+                            <span>RM ${depositPaid.toFixed(2)}</span>
                         </div>
-                        <div class="py-1">
-                            <strong class="d-block text-muted">Booking Status:</strong>
-                            <span class="text-success fw-bold">${bookingStatus}</span>
+                        <hr class="bg-secondary">
+                        <div class="small mb-2 text-white">
+                            <span class="d-block text-muted">Payment Details:</span>
+                            <strong>Method:</strong> ${payMethod} | 
+                            <strong>Status:</strong> <span class="text-info">${booking.payment_status.toUpperCase()}</span>
                         </div>
-                        <div class="py-3 text-center">
-                            <a href="<?= APP_URL ?>/download-invoice/${booking.id}" class="btn btn-primary btn-sm">Download Invoice</a>
+                        <div class="mt-4">
+                            <a href="<?= APP_URL ?>/download-invoice/${booking.id}" class="btn btn-outline-light btn-sm w-100" target="_blank">Download Invoice</a>
                         </div>
                     </div>
                 </div>
             </div>
         `;
-    }
-
-    // JS version of getStatusBadge (must be defined in JS scope)
-    function getStatusBadgeJs(status) {
-        status = status.toLowerCase();
-        switch (status) {
-            case 'confirmed': return '<span class="badge bg-success text-white">Confirmed</span>';
-            case 'pending': return '<span class="badge bg-warning text-dark">Pending</span>';
-            case 'cancelled': return '<span class="badge bg-danger">Cancelled</span>';
-            default: return '<span class="badge bg-secondary">' + ucfirst(status) + '</span>';
-        }
     }
 });
 </script>

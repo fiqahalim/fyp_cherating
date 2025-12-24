@@ -274,13 +274,20 @@ class HomeController extends Controller
         unset($room);
 
         $depositAmount = $totalAmount * 0.35;
+        $customerInfo = null;
+        $isLoggedIn = false;
 
-        // Generate the QR URL with the dynamically calculated total
+        if (isset($_SESSION['user_id'])) {
+            $isLoggedIn = true;
+            $customerInfo = $this->customerModel->getById($_SESSION['user_id']);
+        }
+
+        // Generate the QR URL
         $merchantId = '110329060755';
         $rawPaymentLink = "https://www.tngdigital.com.my/pay?amount=" . number_format($totalAmount, 2, '.', '') . "&merchant_id=" . $merchantId;
 
         // 6. Save selected rooms and booking details to session
-        $_SESSION['selected_rooms'] = $selectedRooms; // e.g. [2 => 1, 5 => 2]
+        $_SESSION['selected_rooms'] = $selectedRooms;
         $_SESSION['rooms_data'] = $rooms_for_session;
         $_SESSION['check_in'] = $arrival;
         $_SESSION['check_out'] = $departure;
@@ -320,6 +327,8 @@ class HomeController extends Controller
             'qrUrl' => $rawPaymentLink,
             'expires_at' => $_SESSION['booking_expires_at'],
             'remaining_seconds' => $remainingSeconds,
+            'customerInfo' => $customerInfo,
+            'isLoggedIn' => $isLoggedIn
         ]);
     }
 

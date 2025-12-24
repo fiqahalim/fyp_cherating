@@ -73,4 +73,15 @@ class PaymentModel extends Model
             throw $error;
         }
     }
+
+    public function addPaymentReceipt($bookingId, $imagePath, $amount)
+    {
+        $sql = "INSERT INTO payments (booking_id, payment_ref_no, amount, receipt_image, payment_type, verified) 
+                VALUES (?, ?, ?, ?, 'full', 'pending')";
+        
+        $paymentRef = "PAY-" . strtoupper(uniqid());
+        $stmt = $this->db->prepare($sql);
+        
+        return $stmt->execute([$bookingId, $paymentRef, $amount, $imagePath]);
+    }
 }

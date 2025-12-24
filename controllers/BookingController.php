@@ -119,4 +119,30 @@ class BookingController extends Controller
 
         $this->view('home/dashboard', $data); 
     }
+
+    // Cancel Booking
+    public function cancelBooking($id) {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        
+        $bookingModel = $this->model('BookingModel');
+        $booking = $bookingModel->getBookingById($id);
+
+        if (!$booking || $booking['customer_id'] != $_SESSION['user_id']) {
+            Flash::set('error', "Unauthorized action.");
+            header("Location: " . APP_URL . "/dashboard");
+            exit;
+        }
+
+        // Perform the cancellation in the database
+        $result = $bookingModel->updateBookingStatus($id, 'unpaid', 'cancelled');
+
+        if ($result) {
+            Flash::set('success', "Booking cancelled successfully. Your refund is being processed.");
+        } else {
+            Flash::set('error', "Failed to cancel booking. Please contact support.");
+        }
+
+        header("Location: " . APP_URL . "/dashboard");
+        exit;
+    }
 }

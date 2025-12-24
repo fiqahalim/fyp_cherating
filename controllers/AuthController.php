@@ -1,9 +1,10 @@
 <?php
+require_once 'helpers/WhatsAppHelper.php';
 
 class AuthController extends Controller
 {
     // Declare the model property
-    private $bookingModel, $contactModel, $roomModel;
+    private $bookingModel, $contactModel, $roomModel, $customerModel, $adminModel;
 
     // Constructor to initialize the model
     public function __construct()
@@ -12,6 +13,8 @@ class AuthController extends Controller
         $this->bookingModel = $this->model('BookingModel');
         $this->contactModel = $this->model('ContactModel');
         $this->roomModel = $this->model('RoomModel');
+        $this->customerModel = $this->model('CustomerModel');
+        $this->adminModel = $this->model('AdminModel');
     }
 
     public function login()
@@ -28,12 +31,8 @@ class AuthController extends Controller
         $username = $_POST['username'] ?? '';
         $password = $_POST['password'] ?? '';
 
-        // Load models
-        $adminModel = $this->model('AdminModel');
-        $customerModel = $this->model('CustomerModel');
-
         // Check admin first
-        $admin = $adminModel->getByUsername($username);
+        $admin = $this->adminModel->getByUsername($username);
 
         if ($admin && password_verify($password, $admin['password'])) {
             // reset any existing session
@@ -51,7 +50,7 @@ class AuthController extends Controller
         }
 
         // Try customer next
-        $customer = $customerModel->getByUsername($username);
+        $customer = $this->customerModel->getByUsername($username);
 
         if ($customer && password_verify($password, $customer['password'])) {
             // reset any existing session
@@ -98,12 +97,11 @@ class AuthController extends Controller
             exit;
         }
 
-        $customerModel = $this->model('CustomerModel');
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
         // Check if username or email already exists (verified + pending)
-        $existingUsername = $customerModel->getByUsername($username, true);
-        $pendingUsername = $customerModel->getPendingByUsername($username);
+        $existingUsername = $this->customerModel->getByUsername($username, true);
+        $pendingUsername = $this->customerModel->getPendingByUsername($username);
 
         if ($existingUsername || $pendingUsername) {
             Flash::set('error', "Username already taken.");
@@ -111,8 +109,8 @@ class AuthController extends Controller
             exit;
         }
 
-        $existingEmail = $customerModel->getByEmail($email, true);
-        $pendingEmail = $customerModel->getPendingByEmail($email);
+        $existingEmail = $this->customerModel->getByEmail($email, true);
+        $pendingEmail = $this->customerModel->getPendingByEmail($email);
 
         if ($existingEmail || $pendingEmail) {
             Flash::set('error', "Email already registered.");
@@ -121,7 +119,7 @@ class AuthController extends Controller
         }
 
         // Check if a pending user exists by email or phone
-        $pendingCustomer = $customerModel->getPendingByEmailOrPhone($email, $phone);
+        $pendingCustomer = $this->customerModel->getPendingByEmailOrPhone($email, $phone);
 
         if ($pendingCustomer) {
             // Previous OTP still valid?
@@ -134,7 +132,7 @@ class AuthController extends Controller
             } else {
                 // Generate new OTP and update pending record
                 $verification_code = rand(100000, 999999);
-                $customerModel->updateVerificationCode(
+                $this->customerModel->updateVerificationCode(
                     $pendingCustomer['id'],
                     $verification_code,
                     $hashedPassword,
@@ -146,24 +144,27 @@ class AuthController extends Controller
         } else {
             // No pending user, create new one
             $verification_code = rand(100000, 999999);
-            $customerModel->createCustomer($full_name, $email, $username, $hashedPassword, $phone, $verification_code);
+            $this->customerModel->createCustomer($full_name, $email, $username, $hashedPassword, $phone, $verification_code);
         }
 
         // Send OTP via WhatsApp
-        $apiKey = "9874625"; // Replace with your actual key
-        $message = urlencode(
-            "🌴 Cherating Guest House 🌴\n\n" .
-            "Hello $full_name,\n" .
+        $whatsappMessage = "🌴 *Cherating Guest House* 🌴\n\n" .
+            "Hello *$full_name*,\n" .
             "Use the code below to verify your account:\n\n" .
-            "🔹 Code: $verification_code\n" .
+            "🔹 *Code: $verification_code*\n" .
             "🔹 Username: $username\n" .
             "🔹 Email: $email\n\n" .
-            "Valid 10 mins. Thank you! 💚"
-        );
-        $url = "https://api.callmebot.com/whatsapp.php?phone=" . urlencode($phone) . "&text=$message&apikey=$apiKey";
-        @file_get_contents($url);
+            "⏳ Valid for 10 mins. Thank you! 💚";
 
-        Flash::set('success', "A verification code has been sent to your WhatsApp. Please enter it below to verify.");
+        $response = WhatsappHelper::sendOTP($phone, $whatsappMessage);
+
+        if (strpos($response, 'Success') !== false) {
+            Flash::set('success', "Verification code sent to WhatsApp!");
+        } else {
+            Flash::set('success', "Registered! (Demo OTP: $verification_code)");
+            error_log("WhatsApp API Response: " . $response);
+        }
+
         header("Location: " . APP_URL . "/auth/verify");
         exit;
     }
@@ -179,10 +180,8 @@ class AuthController extends Controller
                 exit;
             }
 
-            $customerModel = $this->model('CustomerModel');
-
             // Check and mark verified
-            if ($customerModel->verifyCustomer($code)) {
+            if ($this->customerModel->verifyCustomer($code)) {
                 Flash::set('success', "Verification successful! You can now log in.");
                 header("Location: " . APP_URL . "/auth/login");
                 exit;
@@ -292,18 +291,13 @@ class AuthController extends Controller
             session_start();
         }
 
-        if (!isset($_SESSION['user_id'])) {
+        if (!isset($_SESSION['user_id']) || !isset($_SESSION['auth_type'])) {
             header("Location: " . APP_URL . "/auth/login");
             exit;
         }
 
-        if (!isset($_SESSION['role'])) {
-            header("Location: " . APP_URL . "/auth/logout"); 
-            exit;
-        }
-
         $userId = $_SESSION['user_id'];
-        $role = $_SESSION['role'];
+        $role = $_SESSION['auth_type'];
         $data = [];
 
         if ($role === 'admin') {
@@ -335,13 +329,12 @@ class AuthController extends Controller
         }
 
         $userId = $_SESSION['user_id'];
-        $role = $_SESSION['role'] ?? 'customer';
+        $role = $_SESSION['auth_type'] ?? 'customer';
 
         $fullName = $_POST['full_name'] ?? '';
         $email = $_POST['email'] ?? '';
         $username = $_POST['username'] ?? '';
         $password = $_POST['password'] ?? '';
-        $hashed = password_hash($password, PASSWORD_DEFAULT);
         $phone = $_POST['phone'] ?? '';
 
         try {
@@ -350,23 +343,28 @@ class AuthController extends Controller
                 $adminId = $_SESSION['admin_id'] ?? $userId;
                 
                 $adminModel->updateProfileDetails($adminId, $username, $email);
+                if (!empty($password)) {
+                    $hashed = password_hash($password, PASSWORD_DEFAULT);
+                    $adminModel->updateAdminPassword($adminId, $hashed);
+                }
             } else {
                 $customerModel = $this->model('CustomerModel');
                 $customerId = $_SESSION['customer_id'] ?? $userId;
                 
                 $customerModel->updateProfileDetails($customerId, $username, $fullName, $email, $phone); 
+
+                if (!empty($password)) {
+                    $hashed = password_hash($password, PASSWORD_DEFAULT);
+                    $customerModel->updateCustomerPassword($customerId, $hashed);
+                }
             }
 
-            // 3. Success Message and Redirect
             Flash::set('success', "Profile details updated successfully!");
             
         } catch (\Exception $e) {
-            // Log the error and set a generic message
-            Flash::set('error', "An error occurred while updating the profile.");
-            // Optional: Error logging $e->getMessage() 
+            Flash::set('error', "Update failed: " . $e->getMessage());
         }
-
-        Flash::set('success', "Profile updated successfully!");
+        
         header("Location: " . APP_URL . "/profile");
         exit;
     }
@@ -432,17 +430,15 @@ class AuthController extends Controller
             exit;
         }
 
-        $adminModel = $this->model('AdminModel');
-        $customerModel = $this->model('CustomerModel');
         $passwordResetModel = $this->model('PasswordResetModel');
 
         // Check Admin first
-        $user = $adminModel->getByEmail($email);
+        $user = $this->adminModel->getByEmail($email);
         $userType = 'admin';
 
         // If not admin, check customer
         if (!$user) {
-            $user = $customerModel->getByEmail($email, false);
+            $user = $this->customerModel->getByEmail($email, false);
             $userType = 'customer';
         }
 

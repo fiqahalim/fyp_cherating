@@ -98,36 +98,54 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
                 <!-- GUEST DETAILS -->
                 <div class="booking-box mb-4">
                     <h4 class="section-title">Your Details</h4>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label>Full Name <span class="text-danger">*</span></label>
-                            <input type="text" name="name" class="form-control" required value="<?= get_value('name') ?>">
+                    <?php if (isset($customerInfo) && $customerInfo): ?>
+                        <div class="alert alert-info d-flex align-items-center shadow-sm">
+                            <i class="fas fa-user-check fa-2x me-3"></i>
+                            <div>
+                                <h5 class="mb-0"><?= htmlspecialchars($customerInfo['full_name']) ?></h5>
+                                <p class="mb-0 small text-muted">
+                                    <i class="fas fa-envelope me-1"></i> <?= htmlspecialchars($customerInfo['email']) ?> | 
+                                    <i class="fas fa-phone me-1"></i> <?= htmlspecialchars($customerInfo['phone']) ?>
+                                </p>
+                            </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label>Phone Number <span class="text-danger">*</span></label>
-                            <input type="tel" name="phone" class="form-control" required value="<?= get_value('phone') ?>">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label>Email <span class="text-danger">*</span></label>
-                            <input type="email" name="email" id="guest_email" class="form-control" required 
-                                value="<?= get_value('email') ?>">
-                        </div>
-                    </div>
 
-                    <!-- NEW CUSTOMER FIELDS (Hidden by default, shown if flag is set) -->
-                    <div id="new_customer_fields" class="row mt-3" style="display:none;">
-                        <p class="text-danger small">It looks like you don't have an account. Please create a username and password to proceed.</p>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label>Username <span class="text-danger">*</span></label>
-                            <input type="text" name="username" id="guest_username" class="form-control" value="<?= get_value('username') ?>" />
+                        <input type="hidden" name="name" value="<?= htmlspecialchars($customerInfo['full_name']) ?>">
+                        <input type="hidden" name="email" value="<?= htmlspecialchars($customerInfo['email']) ?>">
+                        <input type="hidden" name="phone" value="<?= htmlspecialchars($customerInfo['phone']) ?>">
+
+                    <?php else: ?>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label>Full Name <span class="text-danger">*</span></label>
+                                <input type="text" name="name" class="form-control" required value="<?= get_value('name') ?>">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>Phone Number <span class="text-danger">*</span></label>
+                                <input type="tel" name="phone" class="form-control" required value="<?= get_value('phone') ?>">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>Email <span class="text-danger">*</span></label>
+                                <input type="email" name="email" id="guest_email" class="form-control" required 
+                                    value="<?= get_value('email') ?>">
+                            </div>
                         </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label>Password <span class="text-danger">*</span></label>
-                            <input type="password" name="password" id="guest_password" class="form-control" value="" />
+
+                        <!-- NEW CUSTOMER FIELDS (Hidden by default, shown if flag is set) -->
+                        <div id="new_customer_fields" class="row mt-3" style="display:none;">
+                            <p class="text-danger small">It looks like you don't have an account. Please create a username and password to proceed.</p>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label>Username <span class="text-danger">*</span></label>
+                                <input type="text" name="username" id="guest_username" class="form-control" value="<?= get_value('username') ?>" />
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label>Password <span class="text-danger">*</span></label>
+                                <input type="password" name="password" id="guest_password" class="form-control" value="" />
+                            </div>
                         </div>
-                    </div>
+                    <?php endif; ?>
                 </div>
 
                 <!-- PAYMENT -->
@@ -143,7 +161,7 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
                         <div id="qr_code_container" class="mt-3">
                             <img src="<?= $base_url ?>/assets/images/QR_Merchant.jpeg"
                                 alt="Payment QR Code" 
-                                style="border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
+                                style="border: 1px solid #ddd; padding: 10px; border-radius: 8px; width:350px;">
                         </div>
                         <div class="mt-3" id="receipt_upload_wrapper">
                             <label for="receipt" class="form-label"><strong>Upload Payment Receipt (Required)</strong></label>
@@ -223,7 +241,7 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
                             $room_subtotal = $room['calculated_total'] ?? ($room['price'] * $room_quantity * $totalNights);
                             $avg_night_rate = $room_subtotal / ($totalNights * $room_quantity);
                         ?>
-                        <div class="d-flex justify-content-between small text-muted mb-2">
+                        <div class="d-flex justify-content-between small mb-2">
                             <span>
                                 <?= $room_quantity ?> × <?= htmlspecialchars($room['name']) ?> 
                                 <br><small>(Avg. RM <?= number_format($avg_night_rate, 2) ?> / night)</small>
@@ -245,7 +263,7 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
                     <strong>RM <?= number_format($totalAmount * 0.35, 2) ?></strong>
                 </div>
 
-                <div class="d-flex justify-content-between text-muted small">
+                <div class="d-flex justify-content-between small">
                     <span>Balance at Check-in:</span>
                     <span>RM <?= number_format($totalAmount - ($totalAmount * 0.35), 2) ?></span>
                 </div>

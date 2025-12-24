@@ -13,7 +13,7 @@ class AdminModel
     // Get Admin Profile Data
     public function getAdminProfile($admin_id)
     {
-        $stmt = $this->db->prepare("SELECT username, password FROM admins WHERE id = ?");
+        $stmt = $this->db->prepare("SELECT username, email, password FROM admins WHERE id = ?");
         $stmt->execute([$admin_id]);
         
         return $stmt->fetch(PDO::FETCH_ASSOC);

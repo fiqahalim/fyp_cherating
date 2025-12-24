@@ -12,6 +12,14 @@ class CustomerModel
     /* ----------------------------
      * BASIC GETTERS
      * ---------------------------- */
+    public function getById($id)
+    {
+        $stmt = $this->db->prepare("SELECT * FROM customers WHERE id = ?");
+        $stmt->execute([$id]);
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     public function getByUsername($username, $onlyVerified = false)
     {
         $sql = "SELECT * FROM customers WHERE username = ?";
@@ -57,6 +65,7 @@ class CustomerModel
     {
         $stmt = $this->db->prepare("SELECT * FROM customers WHERE id = ?");
         $stmt->execute([$id]);
+
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
@@ -111,22 +120,27 @@ class CustomerModel
         return false;
     }
 
-    public function updateProfile($id, $fullName, $email, $username, $password, $phone)
+    public function updateProfileDetails($id, $username, $fullName, $email, $phone)
     {
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         $stmt = $this->db->prepare("
             UPDATE customers 
-            SET full_name = :full_name, email = :email, username = :username, password = :password, phone = :phone
+            SET username = :username, 
+                full_name = :full_name, 
+                email = :email, 
+                phone = :phone
             WHERE id = :id
         ");
+
         $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':username', $username);
         $stmt->bindParam(':full_name', $fullName);
         $stmt->bindParam(':email', $email);
-        $stmt->bindParam(':username', $username);
-        $stmt->bindParam(':password', $hashedPassword);
         $stmt->bindParam(':phone', $phone);
+
         return $stmt->execute();
     }
+
+    
 
     /**
      * ONLY updates the password for a customer.
