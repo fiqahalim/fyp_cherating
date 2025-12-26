@@ -9,6 +9,14 @@ class RoomVirtualModel
         $this->db = Database::getInstance()->getConnection();
     }
 
+    public function getAllRoomVirtuals()
+    {
+        $stmt = $this->db->prepare("SELECT * FROM room_virtual_tours");
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function getTourByRoomId($roomId)
     {
         $sql = "SELECT rv.id as tour_id, r.name, r.description, rv.image_path, rv.title 

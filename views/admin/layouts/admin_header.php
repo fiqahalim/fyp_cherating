@@ -30,78 +30,153 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
     <script>
         let lastNotificationCount = 0;
+        const EXPIRATION_DAYS = 30;
+
+        // 1. Enhanced: Get read IDs and PURGE expired ones
+        function getReadIds() {
+            let storage = JSON.parse(localStorage.getItem('read_notifications_v2') || '[]');
+            const now = new Date().getTime();
+            const expirationMs = EXPIRATION_DAYS * 24 * 60 * 60 * 1000;
+
+            // Only keep items that haven't expired
+            const validItems = storage.filter(item => (now - item.time) < expirationMs);
+            
+            // If we removed expired items, update the storage
+            if (validItems.length !== storage.length) {
+                localStorage.setItem('read_notifications_v2', JSON.stringify(validItems));
+            }
+
+            return validItems.map(item => item.id);
+        }
+
+        // 2. Enhanced: Save ID with a timestamp
+        function markAsRead(uniqueId) {
+            let storage = JSON.parse(localStorage.getItem('read_notifications_v2') || '[]');
+            let ids = storage.map(item => item.id);
+
+            if (!ids.includes(uniqueId)) {
+                storage.push({
+                    id: uniqueId,
+                    time: new Date().getTime()
+                });
+                localStorage.setItem('read_notifications_v2', JSON.stringify(storage));
+            }
+            checkNotifications();
+        }
+
+        // 3. Clear All Function
+        function clearAllNotifications() {
+            fetch('<?= $base_url ?>/admin/getGlobalNotifications')
+                .then(response => response.json())
+                .then(data => {
+                    let storage = JSON.parse(localStorage.getItem('read_notifications_v2') || '[]');
+                    let ids = storage.map(item => item.id);
+                    const now = new Date().getTime();
+                    
+                    const allItems = [
+                        ...data.pending_qr.map(i => 'qr_'+i.id), 
+                        ...data.new_bookings.map(i => 'nb_'+i.id), 
+                        ...data.cancellations.map(i => 'can_'+i.id),
+                        ...data.messages.map(i => 'msg_'+i.id) // Added messages here
+                    ];
+
+                    allItems.forEach(uniqueId => {
+                        if (!ids.includes(uniqueId)) {
+                            storage.push({ id: uniqueId, time: now });
+                        }
+                    });
+                    
+                    localStorage.setItem('read_notifications_v2', JSON.stringify(storage));
+                    checkNotifications();
+                });
+        }
 
         function checkNotifications() {
             fetch('<?= $base_url ?>/admin/getGlobalNotifications')
                 .then(response => response.json())
                 .then(data => {
+                    // Define all containers
                     const container = document.getElementById('notification-items-container');
+                    const messageContainer = document.getElementById('message-items-container'); // Defined here
                     const counter = document.getElementById('global-nav-count');
+                    const msgCounter = document.getElementById('global-msg-count'); // Unique name
                     const sound = document.getElementById('notification-sound');
+                    const clearAllBtn = document.getElementById('clear-all-link');
+                    
+                    const readIds = getReadIds();
 
-                    // 1. Play sound if count increased
-                    if (data.total > lastNotificationCount) {
-                        sound.play().catch(e => console.log("Sound blocked by browser until user interacts with page."));
+                    // Filters
+                    const filteredQR = data.pending_qr.filter(item => !readIds.includes('qr_' + item.id));
+                    const filteredNew = data.new_bookings.filter(item => !readIds.includes('nb_' + item.id));
+                    const filteredCan = data.cancellations.filter(item => !readIds.includes('can_' + item.id));
+                    const filteredMessages = data.messages.filter(m => !readIds.includes('msg_' + m.id));
+
+                    const unreadBookingTotal = filteredQR.length + filteredNew.length + filteredCan.length;
+
+                    // Sound logic (based on bookings)
+                    if (unreadBookingTotal > lastNotificationCount) {
+                        sound.play().catch(e => {});
                     }
-                    lastNotificationCount = data.total;
+                    lastNotificationCount = unreadBookingTotal;
 
-                    // 2. Update Badge
-                    counter.innerText = data.total > 0 ? data.total : '';
+                    // Update Badges
+                    counter.innerText = unreadBookingTotal > 0 ? unreadBookingTotal : '';
+                    if(msgCounter) {
+                        msgCounter.innerText = filteredMessages.length > 0 ? filteredMessages.length : '';
+                    }
 
-                    // 3. Build HTML
+                    if (clearAllBtn) {
+                        // Button shows if there is ANY unread content (bookings OR messages)
+                        clearAllBtn.style.display = (unreadBookingTotal + filteredMessages.length) > 0 ? 'block' : 'none';
+                    }
+
+                    // Render Bookings
                     let html = '';
-
-                    // Add Pending QR
-                    data.pending_qr.forEach(item => {
-                        html += `
-                        <a class="dropdown-item d-flex align-items-center" href="<?= $base_url ?>/admin/payments">
-                            <div class="mr-3">
-                                <div class="icon-circle bg-warning"><i class="fas fa-qrcode text-white"></i></div>
-                            </div>
-                            <div>
-                                <div class="small text-gray-500">QR Payment Pending</div>
-                                <span class="font-weight-bold">Verify receipt for Ref: ${item.booking_ref_no}</span>
-                            </div>
+                    filteredQR.forEach(item => {
+                        html += `<a class="dropdown-item d-flex align-items-center" href="<?= $base_url ?>/admin/payments/verify/${item.id}" onclick="markAsRead('qr_${item.id}')">
+                            <div class="mr-3"><div class="icon-circle bg-warning"><i class="fas fa-qrcode text-white"></i></div></div>
+                            <div><div class="small text-gray-500">QR Payment</div>Ref: ${item.booking_ref_no}</div>
                         </a>`;
                     });
-
-                    // Add New Bookings
-                    data.new_bookings.forEach(item => {
-                        html += `
-                        <a class="dropdown-item d-flex align-items-center" href="<?= $base_url ?>/admin/bookings">
-                            <div class="mr-3">
-                                <div class="icon-circle bg-primary"><i class="fas fa-calendar-plus text-white"></i></div>
-                            </div>
-                            <div>
-                                <div class="small text-gray-500">New Booking</div>
-                                New reservation made: ${item.booking_ref_no}
-                            </div>
+                    filteredNew.forEach(item => {
+                        html += `<a class="dropdown-item d-flex align-items-center" href="<?= $base_url ?>/admin/bookings/view/${item.id}" onclick="markAsRead('nb_${item.id}')">
+                            <div class="mr-3"><div class="icon-circle bg-primary"><i class="fas fa-calendar-plus text-white"></i></div></div>
+                            <div><div class="small text-gray-500">New Booking</div>Ref: ${item.booking_ref_no}</div>
                         </a>`;
                     });
-
-                    // Add Cancellations
-                    data.cancellations.forEach(item => {
-                        html += `
-                        <a class="dropdown-item d-flex align-items-center" href="<?= $base_url ?>/admin/bookings">
-                            <div class="mr-3">
-                                <div class="icon-circle bg-danger"><i class="fas fa-user-times text-white"></i></div>
-                            </div>
-                            <div>
-                                <div class="small text-gray-500">Cancellation</div>
-                                ${item.booking_ref_no} was cancelled (>5 days notice).
-                            </div>
+                    filteredCan.forEach(item => {
+                        html += `<a class="dropdown-item d-flex align-items-center" href="<?= $base_url ?>/admin/bookings/view/${item.id}" onclick="markAsRead('can_${item.id}')">
+                            <div class="mr-3"><div class="icon-circle bg-danger"><i class="fas fa-user-times text-white"></i></div></div>
+                            <div><div class="small text-gray-500">Cancellation</div>Ref: ${item.booking_ref_no}</div>
                         </a>`;
                     });
-
-                    if(data.total === 0) {
+                    if(unreadBookingTotal === 0) {
                         html = '<a class="dropdown-item text-center small text-gray-500" href="#">No new alerts</a>';
                     }
-
                     container.innerHTML = html;
+
+                    // Render Messages
+                    let msgHtml = '';
+                    filteredMessages.forEach(msg => {
+                        const shortMsg = msg.message.length > 40 ? msg.message.substring(0, 40) + '...' : msg.message;
+                        msgHtml += `
+                        <a class="dropdown-item d-flex align-items-center" href="<?= $base_url ?>/admin/messages/view/${msg.id}" onclick="markAsRead('msg_${msg.id}')">
+                            <div class="dropdown-list-image mr-3">
+                                <img class="rounded-circle" src="<?= $base_url ?>/assets/images/undraw_profile_1.svg" alt="...">
+                                <div class="status-indicator bg-success"></div>
+                            </div>
+                            <div class="font-weight-bold">
+                                <div class="text-truncate">${shortMsg}</div>
+                                <div class="small text-gray-500">${msg.name}</div>
+                            </div>
+                        </a>`;
+                    });
+                    if (filteredMessages.length === 0) {
+                        msgHtml = '<a class="dropdown-item text-center small text-gray-500" href="#">No new messages</a>';
+                    }
+                    if(messageContainer) messageContainer.innerHTML = msgHtml;
                 });
         }
-
-        // Check every 15 seconds
         setInterval(checkNotifications, 15000);
         document.addEventListener('DOMContentLoaded', checkNotifications);
     </script>
@@ -146,7 +221,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="<?= $base_url ?>/admin/room-tours">
+                <a class="nav-link" href="<?= $base_url ?>/admin/room-virtuals">
                     <i class="fas fa-magnifying-glass"></i><span>360° VIRTUAL TOUR</span>
                 </a>
             </li>
@@ -189,13 +264,15 @@ $current_page = basename($_SERVER['PHP_SELF']);
                                 <span class="badge badge-danger badge-counter" id="global-nav-count">0</span>
                             </a>
                             
-                            <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in"
-                                aria-labelledby="alertsDropdown">
-                                <h6 class="dropdown-header">Alerts Center</h6>
+                            <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="alertsDropdown">
+                                <h6 class="dropdown-header d-flex justify-content-between align-items-center">
+                                    Alerts Center
+                                    <span id="clear-all-link" style="cursor:pointer; text-transform: none; font-weight: normal; font-size: 0.8rem; display:none;" onclick="clearAllNotifications()">
+                                        Mark all read
+                                    </span>
+                                </h6>
                                 
-                                <div id="notification-items-container">
-                                    <a class="dropdown-item text-center small text-gray-500" href="#">No new alerts</a>
-                                </div>
+                                <div id="notification-items-container"></div>
                                 
                                 <a class="dropdown-item text-center small text-gray-500" href="<?= $base_url ?>/admin/bookings">View All Bookings</a>
                             </div>
@@ -210,64 +287,20 @@ $current_page = basename($_SERVER['PHP_SELF']);
                             <a class="nav-link dropdown-toggle" href="#" id="messagesDropdown" role="button"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <i class="fas fa-envelope fa-fw"></i>
-                                <!-- Counter - Messages -->
-                                <span class="badge badge-danger badge-counter">7</span>
+                                <span class="badge badge-danger badge-counter" id="global-msg-count"></span>
                             </a>
-                            <!-- Dropdown - Messages -->
+                            
                             <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in"
                                 aria-labelledby="messagesDropdown">
                                 <h6 class="dropdown-header">
                                     Message Center
                                 </h6>
-                                <a class="dropdown-item d-flex align-items-center" href="#">
-                                    <div class="dropdown-list-image mr-3">
-                                        <img class="rounded-circle" src="<?= $base_url ?>/assets/images/undraw_profile_1.svg"
-                                            alt="...">
-                                        <div class="status-indicator bg-success"></div>
-                                    </div>
-                                    <div class="font-weight-bold">
-                                        <div class="text-truncate">Hi there! I am wondering if you can help me with a
-                                            problem I've been having.</div>
-                                        <div class="small text-gray-500">Emily Fowler · 58m</div>
-                                    </div>
-                                </a>
-                                <a class="dropdown-item d-flex align-items-center" href="#">
-                                    <div class="dropdown-list-image mr-3">
-                                        <img class="rounded-circle" src="<?= $base_url ?>/assets/images/undraw_profile_2.svg"
-                                            alt="...">
-                                        <div class="status-indicator"></div>
-                                    </div>
-                                    <div>
-                                        <div class="text-truncate">I have the photos that you ordered last month, how
-                                            would you like them sent to you?</div>
-                                        <div class="small text-gray-500">Jae Chun · 1d</div>
-                                    </div>
-                                </a>
-                                <a class="dropdown-item d-flex align-items-center" href="#">
-                                    <div class="dropdown-list-image mr-3">
-                                        <img class="rounded-circle" src="<?= $base_url ?>/assets/images/undraw_profile_3.svg"
-                                            alt="...">
-                                        <div class="status-indicator bg-warning"></div>
-                                    </div>
-                                    <div>
-                                        <div class="text-truncate">Last month's report looks great, I am very happy with
-                                            the progress so far, keep up the good work!</div>
-                                        <div class="small text-gray-500">Morgan Alvarez · 2d</div>
-                                    </div>
-                                </a>
-                                <a class="dropdown-item d-flex align-items-center" href="#">
-                                    <div class="dropdown-list-image mr-3">
-                                        <img class="rounded-circle" src="https://source.unsplash.com/Mv9hjnEUHR4/60x60"
-                                            alt="...">
-                                        <div class="status-indicator bg-success"></div>
-                                    </div>
-                                    <div>
-                                        <div class="text-truncate">Am I a good boy? The reason I ask is because someone
-                                            told me that people say this to all dogs, even if they aren't good...</div>
-                                        <div class="small text-gray-500">Chicken the Dog · 2w</div>
-                                    </div>
-                                </a>
-                                <a class="dropdown-item text-center small text-gray-500" href="#">Read More Messages</a>
+
+                                <div id="message-items-container">
+                                    <a class="dropdown-item text-center small text-gray-500" href="#">Loading messages...</a>
+                                </div>
+
+                                <a class="dropdown-item text-center small text-gray-500" href="<?= $base_url ?>/admin/messages">Read More Messages</a>
                             </div>
                         </li>
 

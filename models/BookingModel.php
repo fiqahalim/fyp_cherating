@@ -564,16 +564,22 @@ class BookingModel extends Model
     public function getUnpaidBookingsWithPaymentStatus($limit = 10)
     {
         $sql = "SELECT 
-                b.*, 
-                c.full_name, 
-                p.verified as payment_verify_status, 
-                p.payment_method 
+                    b.id, 
+                    b.booking_ref_no, 
+                    b.check_in, 
+                    b.total_amount, 
+                    b.payment_status,
+                    c.full_name, 
+                    -- We use MAX or a specific pick to avoid duplicates
+                    MAX(p.verified) as payment_verify_status, 
+                    MAX(p.payment_method) as payment_method 
                 FROM bookings b
                 LEFT JOIN customers c ON b.customer_id = c.id 
                 LEFT JOIN payments p ON b.id = p.booking_id 
                 WHERE b.payment_status != 'paid' 
                 AND b.status != 'cancelled'
                 AND (p.verified IS NULL OR p.verified = 'pending')
+                GROUP BY b.id -- This prevents the duplicates
                 ORDER BY b.created_at DESC 
                 LIMIT :limit";
                 

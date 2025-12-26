@@ -77,9 +77,11 @@ Route::group('/admin', function () {
     Route::match(['GET', 'POST'], '/payments/verify/{id}', 'Payment@verifyPayment');
     Route::post('/payments/update_status', 'Payment@updateStatus');
 
-    // 360 Room Tour
-    Route::get('/room-tours', 'RoomTour@index');
-    Route::match(['GET', 'POST'], '/room-tours/create', 'RoomTour@createOrUpdate');
+    // 360 Room Virtual
+    Route::get('/room-virtuals', 'RoomVirtual@index');
+    Route::match(['GET', 'POST'], '/room-virtuals/create', 'RoomVirtual@createOrUpdate');
+    Route::match(['GET', 'POST'], '/room-virtuals/edit/{id}', 'RoomVirtual@createOrUpdate');
+    Route::get('/room-virtuals/view/{id}', 'RoomVirtual@viewRoomVirtual');
 
     // Messages
     Route::get('/messages', 'Message@index');

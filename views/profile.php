@@ -1,3 +1,9 @@
+<?php 
+    if ($role === 'admin') {
+        include_once __DIR__ . '/admin/layouts/admin_header.php'; 
+    }
+?>
+
 <div class="container-fluid mt-4">
     <?php if (isset($_SESSION['success']) || isset($_SESSION['error'])): ?>
         <div class="row">
@@ -114,3 +120,8 @@
         </div>
     </div>
 </div>
+<?php 
+    if ($role === 'admin') {
+        include_once __DIR__ . '/admin/layouts/admin_footer.php'; 
+    }
+?>
