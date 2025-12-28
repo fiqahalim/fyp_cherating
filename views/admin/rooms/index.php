@@ -49,7 +49,7 @@
                                         <tr>
                                             <td><?= htmlspecialchars($room['name']) ?></td>
                                             <td><?= htmlspecialchars($room['description']) ?></td>
-                                            <td><?= htmlspecialchars($room['price']) ?></td>
+                                            <td>RM <?= number_format($room['price'] ?? 0, 2) ?></td>
                                             <td><?= htmlspecialchars($room['total_rooms']) ?></td>
                                             <td><?= htmlspecialchars($room['capacity']) ?></td>
                                             <td><?= ucfirst(htmlspecialchars($room['status'])) ?></td>

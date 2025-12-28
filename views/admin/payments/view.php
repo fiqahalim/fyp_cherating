@@ -18,13 +18,27 @@
                 </div>
                 <div class="card-body text-center">
                     <?php if (!empty($payment['receipt_image'])): ?>
-                        <a href="<?= APP_URL . '/uploads/receipts/' . $payment['receipt_image'] ?>" target="_blank">
-                            <img src="<?= APP_URL . '/uploads/receipts/' . $payment['receipt_image'] ?>" 
-                                 class="img-fluid rounded border shadow-sm" 
-                                 style="max-height: 500px;" 
-                                 alt="Receipt">
+                        <?php 
+                            // Clean the path to ensure no leading slashes
+                            $cleanPath = ltrim($payment['receipt_image'], '/');
+                            $fullUrl = APP_URL . '/' . $cleanPath;
+                        ?>
+                        
+                        <a href="<?= $fullUrl ?>" target="_blank">
+                            <img src="<?= $fullUrl ?>" 
+                                class="img-fluid rounded border shadow-sm" 
+                                style="max-height: 500px;" 
+                                alt="Receipt">
                         </a>
+                        
                         <p class="mt-2 text-muted small"><i class="fas fa-search-plus"></i> Click image to enlarge</p>
+                        
+                        <div class="mt-3">
+                            <a href="<?= $fullUrl ?>" download="Receipt_<?= $payment['payment_ref_no'] ?>" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-download"></i> Download Receipt
+                            </a>
+                        </div>
+
                     <?php else: ?>
                         <div class="py-5 bg-light border rounded">
                             <i class="fas fa-receipt fa-4x text-gray-300"></i>

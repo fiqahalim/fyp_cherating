@@ -64,10 +64,22 @@ class RoomController extends Controller
 
             // Handle image upload if provided
             if (!empty($_FILES['image']['name'])) {
-                $image = $_FILES['image']['name'];
-                $targetDir = __DIR__ . '/../public/uploads/';
-                $imagePath = '/uploads/' . basename($image);
-                move_uploaded_file($_FILES['image']['tmp_name'], $targetDir . basename($image));
+                $imageName = time() . '_' . basename($_FILES['image']['name']);
+                
+                // 1. Where the file goes on your COMPUTER (Physical Path)
+                $physicalDir = 'C:/laragon/www/fyp_cherating/uploads/rooms/';
+                
+                // 2. What goes into the DATABASE (Relative URL Path)
+                // We save "uploads/rooms/filename.png"
+                $databasePath = 'uploads/rooms/' . $imageName; 
+
+                if (!is_dir($physicalDir)) {
+                    mkdir($physicalDir, 0777, true);
+                }
+
+                if (move_uploaded_file($_FILES['image']['tmp_name'], $physicalDir . $imageName)) {
+                    $imagePath = $databasePath;
+                }
             }
 
             if ($id) {

@@ -111,7 +111,15 @@
                         <div class="mb-3">
                             <?php if (!empty($room['image'])): ?>
                                 <div class="mb-3 border rounded p-1 text-center bg-light">
-                                    <img src="<?= APP_URL . $room['image'] ?>" alt="Preview" class="img-fluid rounded shadow-sm" style="max-height: 200px;">
+                                    <?php
+                                        $path = $room['image'];
+                                        if (strpos($path, 'uploads') === false) {
+                                            $path = 'uploads/rooms/' . ltrim($path, '/');
+                                        }
+                                    ?>
+                                    <img src="<?= APP_URL . '/' . ltrim($path, '/') ?>" 
+                                        class="img-fluid rounded shadow-sm" 
+                                        style="max-height: 200px;">
                                 </div>
                             <?php endif; ?>
                             
