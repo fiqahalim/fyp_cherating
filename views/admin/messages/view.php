@@ -1,12 +1,11 @@
 <?php include_once __DIR__ . '/../layouts/admin_header.php'; ?>
 <div class="container-fluid mt-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb bg-transparent p-0">
-            <li class="breadcrumb-item"><a href="<?= APP_URL ?>/admin/dashboard">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="<?= APP_URL ?>/admin/messages">Inbox</a></li>
-            <li class="breadcrumb-item active" aria-current="page">View Message</li>
-        </ol>
-    </nav>
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Messages Details</h1>
+        <a href="<?= APP_URL . '/admin/messages' ?>" class="btn btn-sm btn-secondary shadow-sm">
+            <i class="fas fa-arrow-left fa-sm text-white-50"></i> Back to List
+        </a>
+    </div>
 
     <?php Flash::display(); ?>
 

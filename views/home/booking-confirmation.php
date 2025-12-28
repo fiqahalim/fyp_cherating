@@ -156,11 +156,20 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
                     </select>
 
                     <div id="qr_payment_details" class="payment-method-fields" style="display:none;">
-                        <p>Scan the QR code below to complete your deposit payment:</p>
+                        <h5 class="mb-3">Scan to Pay via Touch 'n Go / DuitNow</h5>
                         <div id="qr_code_container" class="mt-3">
-                            <img src="<?= $base_url ?>/assets/images/QR_Merchant.jpeg"
+                            <img src="<?= APP_URL ?>/assets/images/QR_Merchant.jpeg" 
                                 alt="Payment QR Code" 
-                                style="border: 1px solid #ddd; padding: 10px; border-radius: 8px; width:350px;">
+                                class="img-fluid shadow-sm"
+                                style="border: 1px solid #ddd; padding: 10px; border-radius: 8px; width:300px; max-width: 100%;">
+                        </div>
+                        <div class="mt-3 p-3 bg-light rounded border">
+                            <p class="small text-muted mb-0">
+                                <i class="fas fa-info-circle"></i> <strong>Instructions:</strong><br>
+                                1. Open your <strong>Touch 'n Go eWallet</strong>.<br>
+                                3. Tap 'Scan' to make the 35% of deposit payment<br>
+                                4. Once paid, please upload your receipt below.
+                            </p>
                         </div>
                         <div class="mt-3" id="receipt_upload_wrapper">
                             <label for="receipt" class="form-label"><strong>Upload Payment Receipt (Required)</strong></label>
