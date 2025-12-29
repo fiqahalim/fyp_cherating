@@ -41,37 +41,36 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
                 <div class="booking-box mb-4">
                     <h4 class="section-title">Your Selected Rooms</h4>
 
-                    <?php
-                        $uploadDir = $base_url . '/uploads/rooms/';
-                        $current_rooms = isset($pending_data['rooms']) ? $pending_data['rooms'] : ($rooms ?? []);
-                    ?>
-
                     <?php 
-                    // This block generates the display and the hidden inputs for the rooms
-                    $rooms_to_display = $rooms ?? [];
-
-                    if (!empty($pending_data['rooms'])) {
-                        foreach ($rooms_to_display as &$room) {
-                            $roomId = (int)$room['id'];
-                            $room['quantity'] = (int)($pending_data['rooms'][$roomId] ?? 0);
+                        // Logic for calculating quantities
+                        $rooms_to_display = $rooms ?? [];
+                        if (!empty($pending_data['rooms'])) {
+                            foreach ($rooms_to_display as &$room) {
+                                $roomId = (int)$room['id'];
+                                $room['quantity'] = (int)($pending_data['rooms'][$roomId] ?? 0);
+                            }
+                            unset($room);
                         }
-                        unset($room);
-                    }
                     ?>
 
                     <?php foreach ($rooms_to_display as $room): ?>
                         <?php if ($room['quantity'] > 0 && $room['status'] === 'active'): ?>
                             <?php 
-                            $imageFilename = $room['image']; 
-                            $imagePath = !empty($imageFilename) 
-                                        ? $uploadDir . $imageFilename 
-                                        : $uploadDir . 'default.png';
+                                $imageFilename = $room['image'] ?? ''; 
+                                if (empty($imageFilename)) {
+                                    $finalImagePath = APP_URL . '/uploads/rooms/default.png';
+                                } else {
+                                    if (strpos($imageFilename, 'uploads') === false) {
+                                        $imageFilename = 'uploads/rooms/' . ltrim($imageFilename, '/');
+                                    }
+                                    $finalImagePath = APP_URL . '/' . ltrim($imageFilename, '/');
+                                }
                             ?>
-
                             <div class="room-selected-card mb-3 p-3 border rounded d-flex">
-                                <img src="<?= htmlspecialchars($imagePath) ?>" 
+                                <img src="<?= htmlspecialchars($finalImagePath) ?>" 
                                     alt="<?= htmlspecialchars($room['name']) ?>" 
-                                    class="room-thumb me-3">
+                                    class="room-thumb me-3" 
+                                    style="width: 100px; height: 100px; object-fit: cover;">
 
                                 <div class="ml-3">
                                     <h5 class="mb-1"><?= htmlspecialchars($room['name']) ?></h5>
@@ -79,8 +78,8 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
 
                                     <p class="mb-1">
                                         <?php
-                                            $roomTotal = $room['calculated_total'] ?? ($room['price'] * $room['quantity'] * $totalNights);
-                                            $dynamic_rate = $roomTotal / ($totalNights * $room['quantity']);
+                                            $roomTotal = $room['calculated_total'] ?? ($room['price'] * $room['quantity'] * ($totalNights ?? 1));
+                                            $dynamic_rate = $roomTotal / (($totalNights ?? 1) * $room['quantity']);
                                         ?>
                                         <strong>RM <?= number_format($dynamic_rate, 2) ?></strong> per night 
                                         × <?= (int)$room['quantity'] ?> room(s)
@@ -157,11 +156,20 @@ $totalNights = $totalNights ?? $_SESSION['total_nights'] ?? 0;
                     </select>
 
                     <div id="qr_payment_details" class="payment-method-fields" style="display:none;">
-                        <p>Scan the QR code below to complete your deposit payment:</p>
+                        <h5 class="mb-3">Scan to Pay via Touch 'n Go / DuitNow</h5>
                         <div id="qr_code_container" class="mt-3">
-                            <img src="<?= $base_url ?>/assets/images/QR_Merchant.jpeg"
+                            <img src="<?= APP_URL ?>/assets/images/QR_Merchant.jpeg" 
                                 alt="Payment QR Code" 
-                                style="border: 1px solid #ddd; padding: 10px; border-radius: 8px; width:350px;">
+                                class="img-fluid shadow-sm"
+                                style="border: 1px solid #ddd; padding: 10px; border-radius: 8px; width:300px; max-width: 100%;">
+                        </div>
+                        <div class="mt-3 p-3 bg-light rounded border">
+                            <p class="small text-muted mb-0">
+                                <i class="fas fa-info-circle"></i> <strong>Instructions:</strong><br>
+                                1. Open your <strong>Touch 'n Go eWallet</strong>.<br>
+                                3. Tap 'Scan' to make the 35% of deposit payment<br>
+                                4. Once paid, please upload your receipt below.
+                            </p>
                         </div>
                         <div class="mt-3" id="receipt_upload_wrapper">
                             <label for="receipt" class="form-label"><strong>Upload Payment Receipt (Required)</strong></label>

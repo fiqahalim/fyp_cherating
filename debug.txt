@@ -1,3 +1,7 @@
 confirmBooking reached
 Customer creation error: Missing required username or password for new guest: syafiqahalim.work@gmail.com
 Customer identification/creation failed for email: syafiqahalim.work@gmail.com
+confirmBooking reached
+Checking room booking: room_id = 1, quantity = '1'
+✅ Inserted room booking: room_id = 1, quantity = 1
+Booking created with ID: 3

@@ -2,7 +2,7 @@
 
 class PaymentController extends Controller
 {
-    private $paymentModel;
+    private $paymentModel, $bookingModel, $db;
 
     // Constructor to initialize the model
     public function __construct()

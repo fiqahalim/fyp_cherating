@@ -3,7 +3,7 @@
 class BookingController extends Controller
 {
     // Declare the model property
-    private $bookingModel;
+    private $bookingModel, $paymentModel, $roomModel, $db;
 
     // Constructor to initialize the model
     public function __construct()

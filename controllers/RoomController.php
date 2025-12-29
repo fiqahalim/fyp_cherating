@@ -3,7 +3,7 @@
 class RoomController extends Controller
 {
     // Declare the model property
-    private $roomModel;
+    private $roomModel, $db;
 
     // Constructor to initialize the model
     public function __construct()

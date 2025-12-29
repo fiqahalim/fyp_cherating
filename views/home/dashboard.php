@@ -167,14 +167,30 @@ $allBookings = array_merge($upcomingBookings ?? [], $pastBookings ?? []);
                             <?php foreach ($pastBookings as $booking): ?>
                                 <div class="col-md-6 col-lg-4 mb-3">
                                     <div class="card shadow-sm border-0 past-card">
-                                        <div class="card-body py-2 d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <small class="text-muted d-block">Ref: <?= $booking['booking_ref_no'] ?></small>
-                                                <span class="fw-bold"><?= date('M Y', strtotime($booking['check_in'])) ?> stay</span>
+                                        <div class="card-body py-2">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <small class="text-muted d-block">Ref: <?= $booking['booking_ref_no'] ?></small>
+                                                    <span class="fw-bold"><?= date('M Y', strtotime($booking['check_in'])) ?> stay</span>
+                                                </div>
+                                                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#bookingDetailsModal" data-booking-id="<?= $booking['id'] ?>">
+                                                    View
+                                                </button>
                                             </div>
-                                            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#bookingDetailsModal" data-booking-id="<?= $booking['id'] ?>">
-                                                View
-                                            </button>
+                                            
+                                            <div class="mt-2 border-top pt-2">
+                                                <small class="text-muted d-block mb-1">Rate your rooms:</small>
+                                                <?php foreach ($booking['rooms'] as $room): ?>
+                                                    <button type="button" 
+                                                            class="btn btn-sm btn-warning mb-1" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#reviewModal" 
+                                                            data-room-id="<?= $room['room_id'] ?>" 
+                                                            data-room-name="<?= htmlspecialchars($room['name']) ?>">
+                                                        <i class="fas fa-star"></i> Review <?= htmlspecialchars($room['name']) ?>
+                                                    </button>
+                                                <?php endforeach; ?>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

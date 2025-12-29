@@ -220,6 +220,12 @@
 </div>
 
 <script>
+    // Helper to safely check for elements before adding listeners
+    function safeAddListener(id, event, callback) {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener(event, callback);
+    }
+
     function refreshUnpaidBookings() {
         fetch('<?= APP_URL ?>/admin/getUnpaidBookingsJson')
             .then(response => response.json())
@@ -242,9 +248,10 @@
                 data.forEach(booking => {
                     let statusHtml = '';
                     let actionButtons = '';
+                    const isWaitingQR = (booking.payment_method === 'qr' && booking.verified === 'pending');
                     
                     // 1. Logic for QR Verification
-                    if (booking.payment_method === 'qr' && booking.payment_verify_status === 'pending') {
+                    if (booking.payment_method === 'qr' && booking.verified === 'pending') {
                         statusHtml = `<span class="badge badge-info animate-pulse"><i class="fas fa-clock"></i> Waiting Verification</span>`;
                         actionButtons = `
                             <a href="<?= APP_URL ?>/admin/bookings/view/${booking.id}" class="btn btn-sm btn-primary"><i class="fas fa-eye"></i> View</a>
@@ -283,6 +290,11 @@
     }
 
     document.addEventListener("DOMContentLoaded", function() {
+
+        safeAddListener('yearFilter', 'change', function() {
+            window.location.href = "<?= APP_URL ?>/auth/dashboard?year=" + this.value;
+        });
+        
         // 1. FORECAST CHART
         const forecastElement = document.getElementById('forecastChart');
         if (forecastElement) {

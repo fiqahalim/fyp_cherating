@@ -6,7 +6,9 @@ $isAdmin = $isLoggedIn && ($_SESSION['auth_type'] ?? '') === 'admin';
 $isCustomer = $isLoggedIn && ($_SESSION['auth_type'] ?? '') === 'customer';
 
 // Get the current path
-$current_page = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+$request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$base_path = parse_url($base_url, PHP_URL_PATH);
+$current_page = trim(str_replace($base_path, '', $request_uri), '/');
 
 //  code for php 8.0
 $base_path = trim($base_url, '/');
@@ -37,7 +39,7 @@ if (str_starts_with($current_page, $base_path)) {
     <link rel="stylesheet" href="<?= $base_url ?>/assets/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?= $base_url ?>/assets/css/style.css">
     <link rel="stylesheet" href="<?= $base_url ?>/assets/css/responsive.css">
-    <link rel="icon" href="<?= $base_url ?>/assets/images/fevicon.png" type="image/gif" />
+    <link rel="icon" href="<?= $base_url ?>/assets/images/Cherating_Indah_Logo.png" type="image/gif" />
     <link rel="stylesheet" href="<?= $base_url ?>/assets/css/jquery.mCustomScrollbar.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.min.css" media="screen">
@@ -85,8 +87,8 @@ if (str_starts_with($current_page, $base_path)) {
                                         <li class="nav-item">
                                             <a class="nav-link <?= $current_page == '' ? 'active' : '' ?>" href="<?= $base_url ?>/">Home</a>
                                         </li>
-                                        <li class="nav-item">
-                                            <a class="nav-link <?= $current_page == 'about' ? 'active' : '' ?>" href="<?= $base_url ?>/about">About</a>
+                                        <li class="nav-item <?= $current_page == 'about' ? 'active' : '' ?>">
+                                            <a class="nav-link" href="<?= $base_url ?>/about">About</a>
                                         </li>
                                         <li class="nav-item">
                                             <a class="nav-link <?= $current_page == 'rooms' ? 'active' : '' ?>" href="<?= $base_url ?>/rooms">Our Rooms</a>

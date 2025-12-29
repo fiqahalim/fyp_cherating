@@ -3,7 +3,7 @@
 class AdminController extends Controller
 {
     // Declare the model property
-    private $bookingModel, $contactModel, $roomModel, $customerModel, $adminModel;
+    private $db, $bookingModel, $contactModel, $roomModel, $customerModel, $adminModel;
 
     // Constructor to initialize the model
     public function __construct()
@@ -28,34 +28,43 @@ class AdminController extends Controller
 
     public function getGlobalNotifications()
     {
-        // 1. New Bookings (Today) - Correct as is, but added ORDER for latest first
-        $newBookings = $this->db->query("SELECT id, booking_ref_no FROM bookings 
-            WHERE DATE(created_at) = CURDATE() 
-            ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-        
-        // 2. QR Payments waiting for verification
-        $pendingQR = $this->db->query("SELECT b.id, b.booking_ref_no FROM payments p 
-            JOIN bookings b ON p.booking_id = b.id 
-            WHERE p.payment_method = 'qr' AND p.verified = 'pending'")->fetchAll(PDO::FETCH_ASSOC);
-
-        // 3. Cancellations (> 5 days before check-in)
-        $cancellations = $this->db->query("SELECT id, booking_ref_no FROM bookings 
-            WHERE status = 'cancelled' 
-            AND DATEDIFF(check_in, updated_at) >= 5 
-            ORDER BY updated_at DESC")->fetchAll(PDO::FETCH_ASSOC);
-
-        // 4. Messages
-        $messages = $this->db->query("SELECT id, name, message, created_at FROM contacts 
-            ORDER BY created_at DESC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
-
         header('Content-Type: application/json');
-        echo json_encode([
-            'new_bookings' => $newBookings,
-            'pending_qr' => $pendingQR,
-            'cancellations' => $cancellations,
-            'messages' => $messages,
-            'total' => count($newBookings) + count($pendingQR) + count($cancellations)
-        ]);
+        try {
+            // 1. New Bookings
+            $newBookings = $this->db->query("SELECT id, booking_ref_no FROM bookings 
+                WHERE DATE(created_at) = CURDATE() 
+                ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+            
+            // 2. QR Payments
+            $pendingQR = $this->db->query("SELECT b.id, b.booking_ref_no FROM payments p 
+                JOIN bookings b ON p.booking_id = b.id 
+                WHERE p.payment_method = 'qr' AND p.verified = 'pending'")->fetchAll(PDO::FETCH_ASSOC);
+
+            // 3. Cancellations
+            $cancellations = $this->db->query("SELECT id, booking_ref_no FROM bookings 
+                WHERE status = 'cancelled' 
+                AND DATEDIFF(check_in, updated_at) >= 5 
+                ORDER BY updated_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+
+            // 4. Messages
+            $messages = $this->db->query("SELECT id, name, message, created_at FROM contacts 
+                ORDER BY created_at DESC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                'status' => 'success',
+                'new_bookings' => $newBookings,
+                'pending_qr' => $pendingQR,
+                'cancellations' => $cancellations,
+                'messages' => $messages,
+                'total' => count($newBookings) + count($pendingQR) + count($cancellations)
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ]);
+        }
         exit;
     }
 }
